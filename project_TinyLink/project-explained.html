@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TinyLink — Project Explained Line-by-Line</title>
+<style>
+  :root {
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#30363d;
+    --text:#e6edf3; --muted:#8b949e;
+    --accent:#58a6ff; --accent2:#7ee787; --warn:#f0883e;
+    --danger:#ff7b72; --purple:#d2a8ff; --pink:#ff9ec7; --yellow:#ffd866;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.65;
+  }
+  a{color:var(--accent)}
+  header.hero{
+    background:linear-gradient(135deg,#1f6feb 0%,#8957e5 50%,#db61a2 100%);
+    padding:60px 24px;text-align:center;border-bottom:1px solid var(--border);
+  }
+  header.hero h1{margin:0;font-size:2.5rem}
+  header.hero p{margin:12px auto 0;font-size:1.05rem;opacity:.92;max-width:760px}
+  .pill-row{margin-top:20px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+  .pill{background:rgba(0,0,0,.35);padding:3px 10px;border-radius:999px;font-size:.78rem;
+        border:1px solid rgba(255,255,255,.18)}
+
+  nav.toc{
+    position:sticky;top:0;background:rgba(13,17,23,.96);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);padding:8px 14px;z-index:100;
+    display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;font-size:.85rem;
+  }
+  nav.toc a{color:var(--accent);text-decoration:none;padding:3px 8px;border-radius:5px}
+  nav.toc a:hover{background:var(--panel2)}
+
+  main{max-width:1180px;margin:0 auto;padding:36px 22px}
+  section.file{margin-bottom:60px}
+  section.file > h2{
+    font-size:1.7rem;margin:0 0 4px;color:var(--accent);
+    border-bottom:2px solid var(--border);padding-bottom:8px;
+  }
+  section.file > p.role{color:var(--muted);margin:0 0 18px;font-size:.92rem}
+  h3.subhead{color:var(--purple);margin:24px 0 10px;font-size:1.05rem;
+             text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+
+  /* Two-column block: code + explanation side-by-side */
+  .block{
+    display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0;
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:14px;
+  }
+  .block pre{margin:0}
+  .block .why{font-size:.92rem;color:var(--text)}
+  .block .why b{color:var(--accent2)}
+  .block .why code{font-size:.85em}
+  @media(max-width:780px){.block{grid-template-columns:1fr}}
+
+  pre{
+    font-family:"SF Mono",Menlo,Consolas,monospace;background:var(--panel2);
+    padding:12px 14px;border-radius:6px;overflow-x:auto;font-size:.85rem;
+    line-height:1.5;border:1px solid var(--border);color:var(--text);
+    white-space:pre;
+  }
+  code{font-family:"SF Mono",Menlo,Consolas,monospace;background:var(--panel2);
+       padding:1px 5px;border-radius:3px;font-size:.85em;color:var(--accent2)}
+  pre .kw{color:var(--pink)} pre .str{color:var(--accent2)}
+  pre .com{color:var(--muted);font-style:italic} pre .num{color:var(--yellow)}
+  pre .ty{color:var(--purple)}
+
+  /* Visuals */
+  .visual{background:var(--panel2);border:1px dashed var(--border);border-radius:10px;
+          padding:16px;margin:18px 0;text-align:center}
+  .visual svg{max-width:100%;height:auto}
+  .caption{font-size:.82rem;color:var(--muted);margin-top:6px}
+
+  table{width:100%;border-collapse:collapse;background:var(--panel2);
+        border-radius:8px;overflow:hidden;border:1px solid var(--border);
+        margin:10px 0;font-size:.9rem}
+  th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
+  th{background:var(--panel);color:var(--accent)}
+  tr:last-child td{border-bottom:none}
+
+  .callout{background:rgba(88,166,255,.08);border-left:4px solid var(--accent);
+           padding:12px 16px;border-radius:6px;margin:12px 0;font-size:.93rem}
+  .callout.warn{background:rgba(240,136,62,.08);border-color:var(--warn)}
+  .callout.danger{background:rgba(255,123,114,.08);border-color:var(--danger)}
+
+  .file-header{
+    display:flex;align-items:center;gap:12px;background:var(--panel2);
+    border:1px solid var(--border);border-radius:8px;padding:10px 14px;
+    margin-bottom:14px;font-family:"SF Mono",Menlo,monospace;
+  }
+  .file-header .ico{font-size:1.2rem}
+  .file-header .path{color:var(--accent2);font-weight:600}
+  .file-header .lang{margin-left:auto;color:var(--muted);font-size:.8rem;
+                     border:1px solid var(--border);padding:2px 8px;border-radius:999px}
+
+  .index-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+              gap:12px;margin-top:18px}
+  .index-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:14px;text-decoration:none;color:var(--text);
+    transition:transform .15s,border-color .15s;display:block;
+  }
+  .index-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+  .index-card .num{display:inline-block;background:var(--accent);color:#000;
+                   font-weight:700;padding:1px 8px;border-radius:6px;font-size:.75rem;
+                   margin-bottom:6px}
+  .index-card .title{font-weight:600;font-size:1rem}
+  .index-card .sub{font-size:.8rem;color:var(--muted);margin-top:3px}
+
+  footer{text-align:center;padding:36px 24px;color:var(--muted);
+         border-top:1px solid var(--border);font-size:.9rem}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>TinyLink — Project Explained, Line by Line</h1>
+  <p>The complete URL shortener project. Every file, every block, every line — with diagrams and the <i>why</i> behind each piece. Companion to <a href="url-shortener-tech-stack.html">url-shortener-tech-stack.html</a>.</p>
+  <div class="pill-row">
+    <span class="pill">FastAPI</span><span class="pill">SQLite</span>
+    <span class="pill">Pydantic</span><span class="pill">Base62</span>
+    <span class="pill">Vanilla JS</span><span class="pill">CSS</span>
+    <span class="pill">pytest</span><span class="pill">Docker</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <a href="#index">Index</a>
+  <a href="#bigpic">Big picture</a>
+  <a href="#base62">backend/base62.py</a>
+  <a href="#db">backend/db.py</a>
+  <a href="#main">backend/main.py</a>
+  <a href="#init">backend/__init__.py</a>
+  <a href="#html">frontend/index.html</a>
+  <a href="#css">frontend/style.css</a>
+  <a href="#appjs">frontend/app.js</a>
+  <a href="#req">requirements.txt</a>
+  <a href="#tests">tests/</a>
+  <a href="#docker">Dockerfile</a>
+  <a href="#compose">docker-compose.yml</a>
+  <a href="#run">Run it</a>
+</nav>
+
+<main>
+
+<!-- ========== INDEX ========== -->
+<section class="file" id="index">
+  <h2>Index</h2>
+  <p class="role">Click any card to jump straight to that file. Order follows a sensible read path: algorithm → data → API → frontend → tooling.</p>
+  <div class="index-grid">
+    <a class="index-card" href="#bigpic"><span class="num">0</span><div class="title">Big picture</div><div class="sub">how a request travels end-to-end</div></a>
+    <a class="index-card" href="#base62"><span class="num">1</span><div class="title">backend/base62.py</div><div class="sub">int ↔ short string</div></a>
+    <a class="index-card" href="#db"><span class="num">2</span><div class="title">backend/db.py</div><div class="sub">SQLite connect + schema</div></a>
+    <a class="index-card" href="#main"><span class="num">3</span><div class="title">backend/main.py</div><div class="sub">FastAPI app + routes</div></a>
+    <a class="index-card" href="#init"><span class="num">4</span><div class="title">backend/__init__.py</div><div class="sub">marks the package</div></a>
+    <a class="index-card" href="#html"><span class="num">5</span><div class="title">frontend/index.html</div><div class="sub">DOM skeleton</div></a>
+    <a class="index-card" href="#css"><span class="num">6</span><div class="title">frontend/style.css</div><div class="sub">layout + theme</div></a>
+    <a class="index-card" href="#appjs"><span class="num">7</span><div class="title">frontend/app.js</div><div class="sub">form, fetch, history</div></a>
+    <a class="index-card" href="#req"><span class="num">8</span><div class="title">requirements.txt</div><div class="sub">pinned Python deps</div></a>
+    <a class="index-card" href="#tests"><span class="num">9</span><div class="title">tests/test_*.py</div><div class="sub">pytest unit + API</div></a>
+    <a class="index-card" href="#docker"><span class="num">10</span><div class="title">Dockerfile</div><div class="sub">image build recipe</div></a>
+    <a class="index-card" href="#compose"><span class="num">11</span><div class="title">docker-compose.yml</div><div class="sub">one-command run</div></a>
+    <a class="index-card" href="#run"><span class="num">12</span><div class="title">Run it</div><div class="sub">commands cheat-sheet</div></a>
+  </div>
+</section>
+
+<!-- ========== BIG PICTURE ========== -->
+<section class="file" id="bigpic">
+  <h2>0. Big picture — one request, end to end</h2>
+  <p class="role">Two flows: <b>shorten</b> (POST) and <b>follow</b> (GET /{code}). Read this once; every later section makes sense in this frame.</p>
+
+  <div class="visual">
+    <svg viewBox="0 0 940 360" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ar" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+          <polygon points="0 0,10 5,0 10" fill="#58a6ff"/>
+        </marker>
+        <marker id="arG" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+          <polygon points="0 0,10 5,0 10" fill="#7ee787"/>
+        </marker>
+      </defs>
+
+      <!-- Browser -->
+      <rect x="20" y="140" width="150" height="90" rx="10" fill="#1c2330" stroke="#58a6ff"/>
+      <text x="95" y="170" text-anchor="middle" fill="#e6edf3" font-size="14" font-weight="bold">Browser</text>
+      <text x="95" y="190" text-anchor="middle" fill="#8b949e" font-size="11">index.html + style.css</text>
+      <text x="95" y="206" text-anchor="middle" fill="#8b949e" font-size="11">app.js → fetch()</text>
+      <text x="95" y="222" text-anchor="middle" fill="#8b949e" font-size="11">localStorage history</text>
+
+      <!-- Uvicorn -->
+      <rect x="220" y="140" width="130" height="90" rx="10" fill="#1c2330" stroke="#d2a8ff"/>
+      <text x="285" y="170" text-anchor="middle" fill="#e6edf3" font-size="14" font-weight="bold">Uvicorn</text>
+      <text x="285" y="190" text-anchor="middle" fill="#8b949e" font-size="11">ASGI server</text>
+      <text x="285" y="206" text-anchor="middle" fill="#8b949e" font-size="11">asyncio event loop</text>
+      <text x="285" y="222" text-anchor="middle" fill="#8b949e" font-size="11">port 8000</text>
+
+      <!-- FastAPI -->
+      <rect x="400" y="140" width="150" height="90" rx="10" fill="#1c2330" stroke="#7ee787"/>
+      <text x="475" y="170" text-anchor="middle" fill="#e6edf3" font-size="14" font-weight="bold">FastAPI app</text>
+      <text x="475" y="190" text-anchor="middle" fill="#8b949e" font-size="11">main.py routes</text>
+      <text x="475" y="206" text-anchor="middle" fill="#8b949e" font-size="11">Pydantic validation</text>
+      <text x="475" y="222" text-anchor="middle" fill="#8b949e" font-size="11">CORS middleware</text>
+
+      <!-- base62 cloud -->
+      <ellipse cx="660" cy="80" rx="90" ry="40" fill="#1c2330" stroke="#ffd866"/>
+      <text x="660" y="78" text-anchor="middle" fill="#e6edf3" font-size="13" font-weight="bold">base62.py</text>
+      <text x="660" y="96" text-anchor="middle" fill="#8b949e" font-size="11">id ⇄ code</text>
+
+      <!-- SQLite -->
+      <rect x="600" y="240" width="160" height="90" rx="10" fill="#1c2330" stroke="#ff7b72"/>
+      <text x="680" y="270" text-anchor="middle" fill="#e6edf3" font-size="14" font-weight="bold">SQLite</text>
+      <text x="680" y="290" text-anchor="middle" fill="#8b949e" font-size="11">tinylink.db (1 file)</text>
+      <text x="680" y="306" text-anchor="middle" fill="#8b949e" font-size="11">links table</text>
+      <text x="680" y="322" text-anchor="middle" fill="#8b949e" font-size="11">PK = id (autoincr.)</text>
+
+      <!-- Static files -->
+      <rect x="800" y="140" width="120" height="90" rx="10" fill="#1c2330" stroke="#8b949e"/>
+      <text x="860" y="170" text-anchor="middle" fill="#e6edf3" font-size="13" font-weight="bold">/static</text>
+      <text x="860" y="190" text-anchor="middle" fill="#8b949e" font-size="11">StaticFiles mount</text>
+      <text x="860" y="206" text-anchor="middle" fill="#8b949e" font-size="11">style.css, app.js</text>
+
+      <!-- arrows: req path -->
+      <line x1="170" y1="185" x2="219" y2="185" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+      <line x1="350" y1="185" x2="399" y2="185" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+      <line x1="550" y1="170" x2="600" y2="105" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+      <line x1="550" y1="200" x2="599" y2="270" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+      <line x1="550" y1="180" x2="799" y2="180" stroke="#7ee787" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arG)"/>
+
+      <text x="180" y="135" fill="#8b949e" font-size="11">HTTP</text>
+      <text x="370" y="135" fill="#8b949e" font-size="11">ASGI scope</text>
+      <text x="555" y="135" fill="#8b949e" font-size="11">encode/decode</text>
+      <text x="555" y="248" fill="#8b949e" font-size="11">INSERT / SELECT</text>
+      <text x="650" y="172" fill="#7ee787" font-size="11">GET /static/*</text>
+    </svg>
+    <div class="caption">Solid blue = data path. Dashed green = static-file serve. <code>base62.py</code> is a pure function called inside FastAPI; no separate process.</div>
+  </div>
+
+  <h3 class="subhead">Flow 1 — shorten</h3>
+  <pre>1. User types URL, clicks Shorten      (frontend/app.js: submit handler)
+2. fetch() POST /api/shorten           ({ "long": "https://..." })
+3. Uvicorn accepts socket              (ASGI server)
+4. FastAPI parses JSON via Pydantic    (ShortenIn, validates HttpUrl)
+5. Handler INSERTs row → lastrowid     (backend/main.py + db.py)
+6. encode(lastrowid)                   (backend/base62.py)
+7. Response JSON: { code, short, long } (Pydantic ShortenOut serialises)
+8. JS renders the short link + saves   (history list in localStorage)</pre>
+
+  <h3 class="subhead">Flow 2 — follow</h3>
+  <pre>1. Someone hits  http://host:8000/2k
+2. FastAPI route GET /{code} matches    (RESERVED check excludes /docs etc.)
+3. decode("2k") → int id                (backend/base62.py)
+4. SELECT long_url WHERE id = ?         (backend/db.py connection)
+5. RedirectResponse(long_url, 302)      (browser follows to original URL)</pre>
+</section>
+
+<!-- ========== base62.py ========== -->
+<section class="file" id="base62">
+  <h2>1. backend/base62.py</h2>
+  <p class="role">Pure algorithm. No I/O, no framework. Convert a non-negative integer to a compact string and back.</p>
+
+  <div class="file-header">
+    <span class="ico">🔢</span><span class="path">backend/base62.py</span>
+    <span class="lang">Python</span>
+  </div>
+
+  <h3 class="subhead">Why base 62?</h3>
+  <p>DB row ids count up: 1, 2, 3, … Showing <code>tiny/3829473829</code> is ugly and predictable. We need short, URL-safe codes. Base 62 uses 62 characters — every digit (10) + every lowercase letter (26) + every uppercase letter (26). All URL-safe, no punctuation. 6 characters of base 62 cover <b>62<sup>6</sup> ≈ 56.8 billion</b> distinct codes.</p>
+
+  <div class="visual">
+    <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+      <rect x="20" y="40" width="120" height="50" rx="6" fill="#1c2330" stroke="#58a6ff"/>
+      <text x="80" y="70" text-anchor="middle" fill="#e6edf3" font-size="13">n = 125</text>
+
+      <rect x="170" y="40" width="180" height="50" rx="6" fill="#1c2330" stroke="#7ee787"/>
+      <text x="260" y="65" text-anchor="middle" fill="#7ee787" font-size="13">125 ÷ 62 → q=2, r=1</text>
+      <text x="260" y="82" text-anchor="middle" fill="#8b949e" font-size="11">push ALPHA[1] = "1"</text>
+
+      <rect x="170" y="120" width="180" height="50" rx="6" fill="#1c2330" stroke="#7ee787"/>
+      <text x="260" y="145" text-anchor="middle" fill="#7ee787" font-size="13">2 ÷ 62 → q=0, r=2</text>
+      <text x="260" y="162" text-anchor="middle" fill="#8b949e" font-size="11">push ALPHA[2] = "2"</text>
+
+      <rect x="400" y="80" width="170" height="50" rx="6" fill="#1c2330" stroke="#ffd866"/>
+      <text x="485" y="105" text-anchor="middle" fill="#ffd866" font-size="13">reverse → "21"</text>
+      <text x="485" y="122" text-anchor="middle" fill="#8b949e" font-size="11">code = "21"</text>
+
+      <defs>
+        <marker id="arF" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+          <polygon points="0 0,10 5,0 10" fill="#58a6ff"/>
+        </marker>
+      </defs>
+      <line x1="140" y1="65" x2="169" y2="65" stroke="#58a6ff" stroke-width="2" marker-end="url(#arF)"/>
+      <line x1="260" y1="90" x2="260" y2="119" stroke="#58a6ff" stroke-width="2" marker-end="url(#arF)"/>
+      <line x1="350" y1="145" x2="400" y2="110" stroke="#58a6ff" stroke-width="2" marker-end="url(#arF)"/>
+    </svg>
+    <div class="caption">Encoding loop: divmod by 62, collect remainders, reverse. Same pattern as base-10 ↔ binary conversion.</div>
+  </div>
+
+  <h3 class="subhead">Code, block by block</h3>
+
+  <div class="block">
+    <pre><span class="str">"""Base62 encode/decode for short codes.
+
+DB hands us monotonic integer ids (1, 2, 3, ...). We turn each id into a
+compact string using 62 symbols (0-9, a-z, A-Z). 6 chars = 56.8B possible
+codes -- enough for any hobby project.
+"""</span></pre>
+    <div class="why"><b>Module docstring.</b> Triple-quoted string sitting alone at the top of a Python file becomes <code>module.__doc__</code>. Documents <i>what this file does</i>. Pure text; no runtime behaviour. Helpful when someone runs <code>help(backend.base62)</code> in a REPL.</div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">import</span> string</pre>
+    <div class="why"><b>Import the standard-library <code>string</code> module.</b> Ships with Python, no install. We only need its prebuilt constants <code>string.digits</code>, <code>string.ascii_lowercase</code>, <code>string.ascii_uppercase</code> — saves writing the alphabet out by hand and avoids typos.</div>
+  </div>
+
+  <div class="block">
+    <pre>ALPHABET = string.digits + string.ascii_lowercase + string.ascii_uppercase
+BASE = <span class="kw">len</span>(ALPHABET)
+_INDEX = {ch: i <span class="kw">for</span> i, ch <span class="kw">in</span> <span class="kw">enumerate</span>(ALPHABET)}</pre>
+    <div class="why">
+      <b>Module-level constants.</b>
+      <ul>
+        <li><code>ALPHABET</code> = the 62-character string <code>"0123…9abc…zABC…Z"</code>. The position of each character in this string <i>is</i> its base-62 value.</li>
+        <li><code>BASE = 62</code>. Using <code>len(ALPHABET)</code> instead of a hard-coded <code>62</code> means if you ever swap to a different alphabet (e.g. exclude lookalikes <code>0/O</code>, <code>1/l</code>), <code>BASE</code> updates itself.</li>
+        <li><code>_INDEX</code> = a dict mapping every character back to its integer value, built with a <b>dict comprehension</b>. <code>enumerate(ALPHABET)</code> yields <code>(0, "0"), (1, "1"), … (61, "Z")</code>. Leading underscore is a Python convention meaning "private — don't import this directly."</li>
+      </ul>
+      Lookup is now O(1) — decode can ask <code>_INDEX[ch]</code> instead of <code>ALPHABET.index(ch)</code> which is O(n).
+    </div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">def</span> encode(n: <span class="ty">int</span>) -> <span class="ty">str</span>:
+    <span class="kw">if</span> n &lt; <span class="num">0</span>:
+        <span class="kw">raise</span> <span class="ty">ValueError</span>(<span class="str">"base62 only encodes non-negative integers"</span>)
+    <span class="kw">if</span> n == <span class="num">0</span>:
+        <span class="kw">return</span> ALPHABET[<span class="num">0</span>]</pre>
+    <div class="why">
+      <b>Function signature + early returns.</b>
+      <ul>
+        <li><code>def encode(n: int) -> str:</code> — <i>type hints</i> tell readers (and tools like <code>mypy</code>) that <code>n</code> should be an int and the return value is a str. Hints don't enforce types at runtime; they're documentation that tooling can lint.</li>
+        <li><code>if n &lt; 0: raise ValueError(...)</code> — guard against meaningless input. <code>raise</code> throws an exception that propagates upward until something catches it. SQLite ids start at 1, so we should never hit this in practice; it's a defensive net for future callers.</li>
+        <li><code>if n == 0: return ALPHABET[0]</code> — the loop below stops when <code>n == 0</code>, so without this guard it would return an empty string for input <code>0</code>. Edge case: ids in our schema start at 1, but the algorithm should still be correct in isolation.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre>    out = []
+    <span class="kw">while</span> n &gt; <span class="num">0</span>:
+        n, r = <span class="kw">divmod</span>(n, BASE)
+        out.append(ALPHABET[r])
+    <span class="kw">return</span> <span class="str">""</span>.join(<span class="kw">reversed</span>(out))</pre>
+    <div class="why">
+      <b>The divide-and-mod loop.</b>
+      <ul>
+        <li><code>out = []</code> — empty list to collect characters.</li>
+        <li><code>divmod(n, BASE)</code> — one builtin call that returns <code>(n // 62, n % 62)</code>. Faster and clearer than two separate operations. The tuple-unpack <code>n, r = ...</code> updates <code>n</code> to the quotient and stores the remainder in <code>r</code>.</li>
+        <li><code>out.append(ALPHABET[r])</code> — translate the remainder (0–61) into its alphabet character and stash it.</li>
+        <li>Loop ends when <code>n</code> reaches 0.</li>
+        <li><code>reversed(out)</code> — we collected the least-significant digit first, so reverse before joining. <code>"".join(...)</code> concatenates the list into a single string with no separator.</li>
+      </ul>
+      Example walkthrough for <code>n = 125</code>: <br>iter 1 → divmod(125,62) = (2,1), out = ["1"], n = 2.<br>iter 2 → divmod(2,62) = (0,2), out = ["1","2"], n = 0 → stop.<br>reversed → ["2","1"] → "21".
+    </div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">def</span> decode(s: <span class="ty">str</span>) -> <span class="ty">int</span>:
+    n = <span class="num">0</span>
+    <span class="kw">for</span> ch <span class="kw">in</span> s:
+        <span class="kw">if</span> ch <span class="kw">not in</span> _INDEX:
+            <span class="kw">raise</span> <span class="ty">ValueError</span>(<span class="str">f"invalid base62 character: {ch!r}"</span>)
+        n = n * BASE + _INDEX[ch]
+    <span class="kw">return</span> n</pre>
+    <div class="why">
+      <b>Reverse direction.</b> Same idea as parsing base-10: each character bumps the running total up one position. <code>n = n*62 + value</code> is identical in spirit to <code>n = n*10 + digit</code> for decimal.
+      <ul>
+        <li><code>ch not in _INDEX</code> — reject anything that isn't a digit/letter. Without this check, garbage input would silently return wrong ids.</li>
+        <li><code>{ch!r}</code> — the <code>!r</code> conversion calls <code>repr()</code> on the value so the error shows <code>'!'</code> not just <code>!</code>. Easier to spot whitespace bugs.</li>
+        <li>This is the function called on the redirect path: <code>GET /2k</code> → <code>decode("2k") = 125</code> → <code>SELECT … WHERE id = 125</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout">
+    <b>Why not just store the code as a column?</b> You could — generate a random 6-char string and put it in a <code>code TEXT UNIQUE</code> column. The base62-from-id trick avoids collisions entirely (every id is unique → every code is unique) and skips an extra index, but it does leak monotonic order. For a learning project, the simpler scheme wins.
+  </div>
+</section>
+
+<!-- ========== db.py ========== -->
+<section class="file" id="db">
+  <h2>2. backend/db.py</h2>
+  <p class="role">Open one SQLite file, ensure the schema exists, hand back a connection object. That's it.</p>
+
+  <div class="file-header">
+    <span class="ico">🗄️</span><span class="path">backend/db.py</span>
+    <span class="lang">Python · sqlite3 stdlib</span>
+  </div>
+
+  <h3 class="subhead">The data model</h3>
+  <div class="visual">
+    <svg viewBox="0 0 620 200" xmlns="http://www.w3.org/2000/svg">
+      <rect x="20" y="20" width="580" height="160" rx="8" fill="#1c2330" stroke="#58a6ff"/>
+      <text x="310" y="42" text-anchor="middle" fill="#58a6ff" font-size="14" font-weight="bold">links table</text>
+      <line x1="40" y1="56" x2="580" y2="56" stroke="#30363d"/>
+      <text x="40" y="76"  fill="#7ee787" font-size="13" font-family="monospace">id   |  long_url                          |  created</text>
+      <text x="40" y="98"  fill="#e6edf3" font-size="12" font-family="monospace">1    |  https://example.com/foo           |  2026-05-28 16:01:22</text>
+      <text x="40" y="118" fill="#e6edf3" font-size="12" font-family="monospace">2    |  https://news.ycombinator.com      |  2026-05-28 16:02:09</text>
+      <text x="40" y="138" fill="#e6edf3" font-size="12" font-family="monospace">3    |  https://anthropic.com             |  2026-05-28 16:03:50</text>
+      <text x="40" y="170" fill="#8b949e" font-size="11">PRIMARY KEY (id) — implicit B-tree index, O(log n) lookup</text>
+    </svg>
+    <div class="caption">Three columns. The short <i>code</i> is not stored — it's computed from <code>id</code> by base62.</div>
+  </div>
+
+  <div class="block">
+    <pre><span class="str">"""SQLite connection + schema bootstrap.
+
+One file (tinylink.db). One table (links). Connection is shared across
+threads since FastAPI's default thread pool may dispatch handlers from
+different threads -- check_same_thread=False allows that, and we serialise
+writes via SQLite's own lock.
+"""</span></pre>
+    <div class="why"><b>Module docstring.</b> Explains the threading caveat so the next reader knows why <code>check_same_thread=False</code> is set (see below).</div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">import</span> os
+<span class="kw">import</span> sqlite3
+<span class="kw">from</span> pathlib <span class="kw">import</span> Path</pre>
+    <div class="why">
+      <b>Three stdlib imports — zero install required.</b>
+      <ul>
+        <li><code>os</code> — read environment variables. Lets the DB path be overridden by <code>TINYLINK_DB</code>.</li>
+        <li><code>sqlite3</code> — the actual database driver. Python bundles SQLite.</li>
+        <li><code>pathlib.Path</code> — modern object-oriented file paths. <code>Path(...) / "name"</code> is cleaner than <code>os.path.join</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre>DB_PATH = Path(os.environ.get(<span class="str">"TINYLINK_DB"</span>, Path(__file__).parent / <span class="str">"tinylink.db"</span>))</pre>
+    <div class="why">
+      <b>Decide where the DB file lives.</b>
+      <ul>
+        <li><code>os.environ.get("TINYLINK_DB", &lt;default&gt;)</code> — read the env var if set, else use the default. This is how the test suite redirects the DB to a tmp path without editing code.</li>
+        <li><code>__file__</code> — the path of <i>this</i> source file at runtime. <code>Path(__file__).parent</code> = the <code>backend/</code> folder. Joining with <code>"tinylink.db"</code> gives an absolute path that works whether you launch from project root or anywhere else.</li>
+        <li>Wrapping the whole expression in <code>Path(...)</code> normalises the result regardless of whether the env var was a string or already a <code>Path</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre>SCHEMA = <span class="str">"""
+CREATE TABLE IF NOT EXISTS links (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    long_url  TEXT NOT NULL,
+    created   DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+"""</span></pre>
+    <div class="why">
+      <b>The schema, as a Python string holding raw SQL.</b>
+      <ul>
+        <li><code>CREATE TABLE IF NOT EXISTS</code> — idempotent. Safe to run on every startup; if the table already exists, this is a no-op.</li>
+        <li><code>id INTEGER PRIMARY KEY AUTOINCREMENT</code> — SQLite-special: the PK column doubles as the implicit <code>rowid</code>. <code>AUTOINCREMENT</code> guarantees ids are never reused even if rows are deleted (without it, SQLite may recycle the highest deleted id).</li>
+        <li><code>long_url TEXT NOT NULL</code> — string column, can't be null. Validation also happens upstream in Pydantic, but a DB-level constraint is a backstop.</li>
+        <li><code>created DATETIME DEFAULT CURRENT_TIMESTAMP</code> — auto-fills with the row's insertion time if the INSERT doesn't supply one. We never do, so every row is automatically time-stamped.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">def</span> connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH, check_same_thread=<span class="kw">False</span>)
+    conn.row_factory = sqlite3.Row
+    conn.execute(<span class="str">"PRAGMA journal_mode = WAL;"</span>)
+    conn.executescript(SCHEMA)
+    conn.commit()
+    <span class="kw">return</span> conn</pre>
+    <div class="why">
+      <b>The connection factory — five small but loaded lines.</b>
+      <ul>
+        <li><code>sqlite3.connect(DB_PATH, …)</code> — opens (or creates) the file and returns a <code>Connection</code> object that owns the underlying file handle.</li>
+        <li><code>check_same_thread=False</code> — by default, sqlite3 forbids using a connection from a thread other than the one that created it. FastAPI/Uvicorn may dispatch handlers from a worker thread pool, so we disable the check. <i>Safe</i> because SQLite itself uses a file-level lock — only one writer at a time, readers don't block.</li>
+        <li><code>row_factory = sqlite3.Row</code> — rows come back as dict-like objects: <code>row["long_url"]</code> instead of <code>row[0]</code>. Major readability win in <code>main.py</code>.</li>
+        <li><code>PRAGMA journal_mode = WAL;</code> — switch SQLite from rollback-journal to write-ahead-logging. WAL lets readers and one writer run concurrently. A common perf tweak.</li>
+        <li><code>conn.executescript(SCHEMA)</code> — runs the multi-statement schema script. <code>execute</code> only takes one statement; <code>executescript</code> handles many separated by <code>;</code>.</li>
+        <li><code>conn.commit()</code> — DDL doesn't strictly need commit in SQLite's autocommit-ish mode, but it's harmless and explicit.</li>
+        <li><code>return conn</code> — the caller (<code>main.py</code>) holds onto this single shared connection.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <b>One connection vs a pool.</b> For high traffic, share a single connection only for reads; or move to <code>aiosqlite</code> / a real RDBMS with a connection pool. For this learning project, one shared sync connection plus WAL is plenty.
+  </div>
+</section>
+
+<!-- ========== main.py ========== -->
+<section class="file" id="main">
+  <h2>3. backend/main.py</h2>
+  <p class="role">The FastAPI app: middleware, static-file mount, Pydantic models, and the four routes.</p>
+
+  <div class="file-header">
+    <span class="ico">🚀</span><span class="path">backend/main.py</span>
+    <span class="lang">Python · FastAPI</span>
+  </div>
+
+  <h3 class="subhead">Request pipeline</h3>
+  <div class="visual">
+    <svg viewBox="0 0 760 110" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arP" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+          <polygon points="0 0,10 5,0 10" fill="#58a6ff"/>
+        </marker>
+      </defs>
+      <rect x="10"  y="35" width="90"  height="40" rx="6" fill="#1c2330" stroke="#58a6ff"/>
+      <text x="55"  y="60" text-anchor="middle" fill="#e6edf3" font-size="11">socket in</text>
+      <rect x="110" y="35" width="90"  height="40" rx="6" fill="#1c2330" stroke="#d2a8ff"/>
+      <text x="155" y="60" text-anchor="middle" fill="#d2a8ff" font-size="11">Uvicorn</text>
+      <rect x="210" y="35" width="100" height="40" rx="6" fill="#1c2330" stroke="#d2a8ff"/>
+      <text x="260" y="60" text-anchor="middle" fill="#d2a8ff" font-size="11">CORS mw</text>
+      <rect x="320" y="35" width="100" height="40" rx="6" fill="#1c2330" stroke="#d2a8ff"/>
+      <text x="370" y="60" text-anchor="middle" fill="#d2a8ff" font-size="11">router match</text>
+      <rect x="430" y="35" width="110" height="40" rx="6" fill="#1c2330" stroke="#d2a8ff"/>
+      <text x="485" y="60" text-anchor="middle" fill="#d2a8ff" font-size="11">Pydantic parse</text>
+      <rect x="550" y="35" width="110" height="40" rx="6" fill="#1c2330" stroke="#7ee787"/>
+      <text x="605" y="60" text-anchor="middle" fill="#7ee787" font-size="11">handler runs</text>
+      <rect x="670" y="35" width="80"  height="40" rx="6" fill="#1c2330" stroke="#58a6ff"/>
+      <text x="710" y="60" text-anchor="middle" fill="#e6edf3" font-size="11">JSON out</text>
+
+      <line x1="100" y1="55" x2="109" y2="55" stroke="#58a6ff" stroke-width="2" marker-end="url(#arP)"/>
+      <line x1="200" y1="55" x2="209" y2="55" stroke="#58a6ff" stroke-width="2" marker-end="url(#arP)"/>
+      <line x1="310" y1="55" x2="319" y2="55" stroke="#58a6ff" stroke-width="2" marker-end="url(#arP)"/>
+      <line x1="420" y1="55" x2="429" y2="55" stroke="#58a6ff" stroke-width="2" marker-end="url(#arP)"/>
+      <line x1="540" y1="55" x2="549" y2="55" stroke="#58a6ff" stroke-width="2" marker-end="url(#arP)"/>
+      <line x1="660" y1="55" x2="669" y2="55" stroke="#58a6ff" stroke-width="2" marker-end="url(#arP)"/>
+    </svg>
+    <div class="caption">Each stage either passes the request along or short-circuits with an error response. Bad JSON dies at Pydantic — your handler never sees it.</div>
+  </div>
+
+  <h3 class="subhead">Block-by-block</h3>
+
+  <div class="block">
+    <pre><span class="str">"""TinyLink FastAPI app.
+
+Routes:
+    GET  /                      -> serve frontend index.html
+    POST /api/shorten           -> create short code for a long URL
+    GET  /api/links/{code}      -> meta lookup (JSON, no redirect)
+    GET  /{code}                -> 302 redirect to long URL
+"""</span></pre>
+    <div class="why"><b>Docstring as route table.</b> Treating the docstring as a tiny README means anyone opening the file sees the API shape immediately, without scrolling for the <code>@app</code> decorators.</div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">from</span> pathlib <span class="kw">import</span> Path
+
+<span class="kw">from</span> fastapi <span class="kw">import</span> FastAPI, HTTPException, Request
+<span class="kw">from</span> fastapi.middleware.cors <span class="kw">import</span> CORSMiddleware
+<span class="kw">from</span> fastapi.responses <span class="kw">import</span> FileResponse, RedirectResponse
+<span class="kw">from</span> fastapi.staticfiles <span class="kw">import</span> StaticFiles
+<span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel, HttpUrl
+
+<span class="kw">from</span> .base62 <span class="kw">import</span> decode, encode
+<span class="kw">from</span> .db <span class="kw">import</span> connect</pre>
+    <div class="why">
+      <b>Imports, grouped by source.</b> Python convention: stdlib first, third-party next, local last. A blank line between groups.
+      <ul>
+        <li><code>FastAPI</code> — the framework class. <code>HTTPException</code> — raise this to short-circuit with a status code. <code>Request</code> — gives access to URL, headers, base URL.</li>
+        <li><code>CORSMiddleware</code> — adds <code>Access-Control-Allow-*</code> headers so a browser at a different origin (e.g. dev frontend on port 5173) can call this API.</li>
+        <li><code>FileResponse</code> — streams a file from disk. <code>RedirectResponse</code> — sends a 3xx with a Location header.</li>
+        <li><code>StaticFiles</code> — a mountable ASGI app that serves a directory.</li>
+        <li><code>BaseModel</code>, <code>HttpUrl</code> — Pydantic for declarative schema + validation. <code>HttpUrl</code> is a special string type that only accepts well-formed http/https URLs.</li>
+        <li><code>from .base62 import …</code> — the dot means "from this package". Equivalent to <code>from backend.base62 import …</code> when run as <code>uvicorn backend.main:app</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre>RESERVED = {<span class="str">"api"</span>, <span class="str">"static"</span>, <span class="str">"docs"</span>, <span class="str">"redoc"</span>, <span class="str">"openapi.json"</span>, <span class="str">"favicon.ico"</span>}
+
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / <span class="str">"frontend"</span></pre>
+    <div class="why">
+      <b>Two module-level constants.</b>
+      <ul>
+        <li><code>RESERVED</code> — a <i>set</i> (curly braces, no key:value) of path segments we refuse to treat as short codes. Without this, hitting <code>/docs</code> might run the redirect logic and try to decode "docs" as base62. We check membership in O(1).</li>
+        <li><code>FRONTEND_DIR</code> — <code>.resolve()</code> turns the path absolute, then <code>.parent.parent</code> climbs from <code>backend/main.py</code> → <code>backend/</code> → project root, then joins <code>frontend</code>. This makes the path independent of where you launch the process.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre>app = FastAPI(title=<span class="str">"TinyLink"</span>, version=<span class="str">"1.0.0"</span>)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[<span class="str">"*"</span>],
+    allow_methods=[<span class="str">"GET"</span>, <span class="str">"POST"</span>],
+    allow_headers=[<span class="str">"*"</span>],
+)
+
+app.mount(<span class="str">"/static"</span>, StaticFiles(directory=FRONTEND_DIR), name=<span class="str">"static"</span>)
+
+conn = connect()</pre>
+    <div class="why">
+      <b>Construct the app, attach middleware, mount static dir, open DB.</b>
+      <ul>
+        <li><code>FastAPI(title=…, version=…)</code> — these show up on the auto-generated Swagger UI at <code>/docs</code>.</li>
+        <li><code>add_middleware(CORSMiddleware, …)</code> — wraps every response. Headers signal browsers that cross-origin requests are OK. Asterisk origins is fine for a public read-only redirect API; tighten in production.</li>
+        <li><code>app.mount("/static", StaticFiles(directory=…))</code> — mounts a sub-app at <code>/static</code>. Any request whose path starts with <code>/static/</code> is served from <code>frontend/</code> as a raw file. Mounts are checked <i>before</i> routes during URL resolution, so this doesn't conflict with <code>/{code}</code>.</li>
+        <li><code>conn = connect()</code> — open the DB <i>once</i>, at import time. Every handler reuses this connection. Module-level state is a hot debate in FastAPI; for a small app, this is fine.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">class</span> ShortenIn(BaseModel):
+    long: HttpUrl
+
+<span class="kw">class</span> ShortenOut(BaseModel):
+    code: <span class="ty">str</span>
+    short: <span class="ty">str</span>
+    long: <span class="ty">str</span></pre>
+    <div class="why">
+      <b>Pydantic models = the API contract.</b>
+      <ul>
+        <li><code>ShortenIn</code> — what the POST body must look like. Declaring <code>long: HttpUrl</code> means Pydantic will reject anything that isn't an http/https URL and FastAPI will respond with HTTP 422 automatically, before your handler runs.</li>
+        <li><code>ShortenOut</code> — the response shape. FastAPI also uses these to generate the OpenAPI schema visible at <code>/docs</code>.</li>
+        <li>Field types in the response are plain <code>str</code> (not <code>HttpUrl</code>) so the JSON is a plain string and tools that consume it don't have to know about a custom URL class.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">@app</span>.get(<span class="str">"/"</span>, include_in_schema=<span class="kw">False</span>)
+<span class="kw">def</span> index() -> FileResponse:
+    <span class="kw">return</span> FileResponse(FRONTEND_DIR / <span class="str">"index.html"</span>)</pre>
+    <div class="why">
+      <b>Serve the frontend at the root URL.</b>
+      <ul>
+        <li><code>@app.get("/")</code> — register a handler for <code>GET /</code>. The function name (<code>index</code>) is not magic; FastAPI uses it as the OpenAPI <code>operationId</code>.</li>
+        <li><code>include_in_schema=False</code> — hides this route from <code>/docs</code> because it's an HTML serve, not part of the JSON API.</li>
+        <li><code>FileResponse</code> — sets <code>Content-Type: text/html</code> from the file extension, streams the bytes, sends proper <code>Content-Length</code> and ETag headers. No need to read the file yourself.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">@app</span>.post(<span class="str">"/api/shorten"</span>, response_model=ShortenOut)
+<span class="kw">def</span> create_short(body: ShortenIn, request: Request) -> ShortenOut:
+    long_url = <span class="kw">str</span>(body.long)
+    cur = conn.execute(
+        <span class="str">"INSERT INTO links (long_url) VALUES (?)"</span>,
+        (long_url,),
+    )
+    conn.commit()
+    code = encode(cur.lastrowid)
+    base = <span class="kw">str</span>(request.base_url).rstrip(<span class="str">"/"</span>)
+    <span class="kw">return</span> ShortenOut(code=code, short=<span class="str">f"{base}/{code}"</span>, long=long_url)</pre>
+    <div class="why">
+      <b>The shorten endpoint.</b>
+      <ul>
+        <li><code>@app.post("/api/shorten", response_model=ShortenOut)</code> — declares method, path, <i>and</i> the schema FastAPI should validate/serialise the response against. If your code returns a dict missing <code>code</code>, FastAPI raises an internal error during serialisation.</li>
+        <li><code>body: ShortenIn</code> — because the type is a Pydantic model, FastAPI knows to read the request body as JSON and parse it. If you'd written <code>body: int</code>, it would read from a query string instead.</li>
+        <li><code>request: Request</code> — FastAPI sees this special type and injects the raw Request. Used here to build the absolute short URL.</li>
+        <li><code>str(body.long)</code> — <code>HttpUrl</code> is its own type; we cast to str for the DB and JSON response.</li>
+        <li><code>conn.execute("…?…", (long_url,))</code> — the <code>?</code> is a parameter placeholder. SQLite substitutes the values <i>after</i> parsing the SQL, which makes injection impossible. The trailing comma in <code>(long_url,)</code> is required to make it a tuple (one-element tuples need that comma).</li>
+        <li><code>conn.commit()</code> — make the INSERT durable. Without this, the row may sit in an uncommitted transaction.</li>
+        <li><code>cur.lastrowid</code> — the autoincrement id SQLite just assigned. Pass it through <code>encode()</code> to get the short code.</li>
+        <li><code>str(request.base_url).rstrip("/")</code> — <code>base_url</code> is something like <code>http://localhost:8000/</code>; strip the trailing slash so we don't end up with <code>//code</code>.</li>
+        <li><code>return ShortenOut(…)</code> — building the model explicitly is equivalent to returning a dict; this form is type-checked by IDEs.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">@app</span>.get(<span class="str">"/api/links/{code}"</span>)
+<span class="kw">def</span> link_meta(code: <span class="ty">str</span>) -> <span class="ty">dict</span>:
+    <span class="kw">if</span> code <span class="kw">in</span> RESERVED:
+        <span class="kw">raise</span> HTTPException(<span class="num">404</span>, <span class="str">"not found"</span>)
+    <span class="kw">try</span>:
+        link_id = decode(code)
+    <span class="kw">except</span> <span class="ty">ValueError</span>:
+        <span class="kw">raise</span> HTTPException(<span class="num">400</span>, <span class="str">"invalid code"</span>)
+    row = conn.execute(
+        <span class="str">"SELECT id, long_url, created FROM links WHERE id = ?"</span>,
+        (link_id,),
+    ).fetchone()
+    <span class="kw">if not</span> row:
+        <span class="kw">raise</span> HTTPException(<span class="num">404</span>, <span class="str">"not found"</span>)
+    <span class="kw">return</span> {<span class="str">"code"</span>: code, <span class="str">"long"</span>: row[<span class="str">"long_url"</span>], <span class="str">"created"</span>: row[<span class="str">"created"</span>]}</pre>
+    <div class="why">
+      <b>Meta endpoint — returns JSON instead of redirecting.</b> Useful for an admin UI or debugging without triggering the actual redirect.
+      <ul>
+        <li><code>{code}</code> in the path becomes the function arg <code>code: str</code>. FastAPI parses path params from URL segments.</li>
+        <li><code>raise HTTPException(404, …)</code> — short-circuit. FastAPI turns this into <code>{"detail":"not found"}</code> with the right status.</li>
+        <li><code>try/except ValueError</code> — <code>decode</code> raises if a non-alphabet character appears. We turn that into a 400 (client sent bad input) instead of letting Python's traceback leak.</li>
+        <li><code>.fetchone()</code> returns either the first row or <code>None</code>. <code>None</code> → 404.</li>
+        <li><code>row["long_url"]</code> works because we set <code>row_factory = sqlite3.Row</code> in <code>db.py</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">@app</span>.get(<span class="str">"/{code}"</span>, include_in_schema=<span class="kw">False</span>)
+<span class="kw">def</span> follow(code: <span class="ty">str</span>) -> RedirectResponse:
+    <span class="kw">if</span> code <span class="kw">in</span> RESERVED:
+        <span class="kw">raise</span> HTTPException(<span class="num">404</span>, <span class="str">"not found"</span>)
+    <span class="kw">try</span>:
+        link_id = decode(code)
+    <span class="kw">except</span> <span class="ty">ValueError</span>:
+        <span class="kw">raise</span> HTTPException(<span class="num">404</span>, <span class="str">"not found"</span>)
+    row = conn.execute(
+        <span class="str">"SELECT long_url FROM links WHERE id = ?"</span>,
+        (link_id,),
+    ).fetchone()
+    <span class="kw">if not</span> row:
+        <span class="kw">raise</span> HTTPException(<span class="num">404</span>, <span class="str">"not found"</span>)
+    <span class="kw">return</span> RedirectResponse(row[<span class="str">"long_url"</span>], status_code=<span class="num">302</span>)</pre>
+    <div class="why">
+      <b>The catch-all redirect.</b> Last route declared, registered after every more-specific route, so it only fires when nothing else matched.
+      <ul>
+        <li><code>status_code=302</code> = "Found", a temporary redirect. Browsers don't cache it permanently. Use 301 if you really want permanent caching, but 302 is friendlier when you might want to change destinations later (analytics rewrites, etc.).</li>
+        <li>Bad code paths return 404 (not 400) here because, from the user's perspective, a URL like <code>tiny.io/abc!!!</code> is just "not a real short link" — same UX as a deleted link.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout">
+    <b>Why are the handlers <code>def</code>, not <code>async def</code>?</b> SQLite's stdlib driver is synchronous. Using <code>async def</code> here would let blocking calls stall the event loop. FastAPI runs sync handlers in a thread pool, which is the right move for a sync DB driver. Switch to <code>async def</code> only when you're calling async APIs (e.g. <code>aiosqlite</code>, <code>asyncpg</code>, <code>httpx.AsyncClient</code>).
+  </div>
+</section>
+
+<!-- ========== __init__.py ========== -->
+<section class="file" id="init">
+  <h2>4. backend/__init__.py</h2>
+  <p class="role">An empty file with a very specific job.</p>
+
+  <div class="file-header">
+    <span class="ico">📦</span><span class="path">backend/__init__.py</span>
+    <span class="lang">Python · empty</span>
+  </div>
+
+  <p>This file is intentionally blank. Its presence in <code>backend/</code> tells Python "treat this directory as a package." Once it exists, you can write <code>from backend.main import app</code> and <code>from .base62 import encode</code>. Without it, modern Python still works in many cases (PEP 420 namespace packages), but having an explicit <code>__init__.py</code> avoids weirdness with tools like pytest discovering modules.</p>
+
+  <p>You can put startup code or re-exports here later (e.g. <code>from .main import app</code> to allow <code>from backend import app</code>), but keeping it empty is the cleanest default.</p>
+</section>
+
+<!-- ========== index.html ========== -->
+<section class="file" id="html">
+  <h2>5. frontend/index.html</h2>
+  <p class="role">DOM skeleton. No logic, no styling — those live in <code>app.js</code> and <code>style.css</code>.</p>
+
+  <div class="file-header">
+    <span class="ico">📄</span><span class="path">frontend/index.html</span>
+    <span class="lang">HTML5</span>
+  </div>
+
+  <div class="visual">
+    <svg viewBox="0 0 660 240" xmlns="http://www.w3.org/2000/svg">
+      <rect x="270" y="10" width="120" height="32" rx="6" fill="#1f6feb"/>
+      <text x="330" y="32" text-anchor="middle" fill="#fff" font-size="13">&lt;html&gt;</text>
+
+      <rect x="120" y="68" width="120" height="32" rx="6" fill="#8957e5"/>
+      <text x="180" y="90" text-anchor="middle" fill="#fff" font-size="13">&lt;head&gt;</text>
+
+      <rect x="420" y="68" width="120" height="32" rx="6" fill="#8957e5"/>
+      <text x="480" y="90" text-anchor="middle" fill="#fff" font-size="13">&lt;body&gt;</text>
+
+      <rect x="290" y="130" width="90" height="32" rx="6" fill="#7ee787"/>
+      <text x="335" y="152" text-anchor="middle" fill="#000" font-size="12">&lt;header&gt;</text>
+
+      <rect x="390" y="130" width="100" height="32" rx="6" fill="#7ee787"/>
+      <text x="440" y="152" text-anchor="middle" fill="#000" font-size="12">&lt;section×3&gt;</text>
+
+      <rect x="500" y="130" width="100" height="32" rx="6" fill="#7ee787"/>
+      <text x="550" y="152" text-anchor="middle" fill="#000" font-size="12">&lt;footer&gt;</text>
+
+      <rect x="290" y="190" width="120" height="32" rx="6" fill="#ffd866"/>
+      <text x="350" y="212" text-anchor="middle" fill="#000" font-size="11">form, ul, cards</text>
+
+      <line x1="330" y1="42" x2="180" y2="68" stroke="#58a6ff" stroke-width="2"/>
+      <line x1="330" y1="42" x2="480" y2="68" stroke="#58a6ff" stroke-width="2"/>
+      <line x1="480" y1="100" x2="335" y2="130" stroke="#58a6ff" stroke-width="2"/>
+      <line x1="480" y1="100" x2="440" y2="130" stroke="#58a6ff" stroke-width="2"/>
+      <line x1="480" y1="100" x2="550" y2="130" stroke="#58a6ff" stroke-width="2"/>
+      <line x1="440" y1="162" x2="350" y2="190" stroke="#58a6ff" stroke-width="2"/>
+    </svg>
+    <div class="caption">Structure of <code>index.html</code> as a DOM tree.</div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">&lt;!DOCTYPE html&gt;</span>
+&lt;<span class="kw">html</span> <span class="ty">lang</span>=<span class="str">"en"</span>&gt;</pre>
+    <div class="why">
+      <b>The doctype + root.</b> <code>&lt;!DOCTYPE html&gt;</code> tells the browser "HTML5 standards mode." Without it, browsers fall into quirks mode that breaks modern CSS. <code>lang="en"</code> is an accessibility hint — screen readers pick the right pronunciation rules.
+    </div>
+  </div>
+
+  <div class="block">
+    <pre>&lt;<span class="kw">head</span>&gt;
+  &lt;<span class="kw">meta</span> <span class="ty">charset</span>=<span class="str">"UTF-8"</span> /&gt;
+  &lt;<span class="kw">meta</span> <span class="ty">name</span>=<span class="str">"viewport"</span> <span class="ty">content</span>=<span class="str">"width=device-width, initial-scale=1.0"</span> /&gt;
+  &lt;<span class="kw">title</span>&gt;TinyLink — URL Shortener&lt;/<span class="kw">title</span>&gt;
+  &lt;<span class="kw">link</span> <span class="ty">rel</span>=<span class="str">"stylesheet"</span> <span class="ty">href</span>=<span class="str">"/static/style.css"</span> /&gt;
+&lt;/<span class="kw">head</span>&gt;</pre>
+    <div class="why">
+      <b>Document metadata.</b>
+      <ul>
+        <li><code>charset="UTF-8"</code> — text encoding. Without it browsers may mis-decode non-ASCII characters.</li>
+        <li><code>viewport</code> meta — tells mobile browsers to use the actual screen width instead of pretending to be a 980-px desktop. Required for responsive CSS to do anything on phones.</li>
+        <li><code>&lt;title&gt;</code> — text in the browser tab + search results.</li>
+        <li><code>&lt;link rel="stylesheet"&gt;</code> — pulls in the CSS file. The path <code>/static/style.css</code> matches the FastAPI <code>app.mount("/static", …)</code> in <code>main.py</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre>&lt;<span class="kw">header</span> <span class="ty">class</span>=<span class="str">"topbar"</span>&gt;
+  &lt;<span class="kw">div</span> <span class="ty">class</span>=<span class="str">"brand"</span>&gt;
+    &lt;<span class="kw">span</span> <span class="ty">class</span>=<span class="str">"logo"</span>&gt;🔗&lt;/<span class="kw">span</span>&gt;
+    &lt;<span class="kw">span</span> <span class="ty">class</span>=<span class="str">"brand-name"</span>&gt;TinyLink&lt;/<span class="kw">span</span>&gt;
+  &lt;/<span class="kw">div</span>&gt;
+  &lt;<span class="kw">nav</span> <span class="ty">class</span>=<span class="str">"nav-links"</span>&gt;
+    &lt;<span class="kw">a</span> <span class="ty">href</span>=<span class="str">"#shorten"</span>&gt;Shorten&lt;/<span class="kw">a</span>&gt;
+    &lt;<span class="kw">a</span> <span class="ty">href</span>=<span class="str">"#history"</span>&gt;History&lt;/<span class="kw">a</span>&gt;
+    &lt;<span class="kw">a</span> <span class="ty">href</span>=<span class="str">"#about"</span>&gt;About&lt;/<span class="kw">a</span>&gt;
+  &lt;/<span class="kw">nav</span>&gt;
+&lt;/<span class="kw">header</span>&gt;</pre>
+    <div class="why">
+      <b>Top nav.</b>
+      <ul>
+        <li><code>&lt;header&gt;</code> / <code>&lt;nav&gt;</code> are <i>semantic</i> tags — same look as <code>&lt;div&gt;</code> but they tell screen readers and search bots what the block is for.</li>
+        <li><code>class="topbar"</code> is the hook for CSS selectors (<code>.topbar { … }</code>).</li>
+        <li><code>href="#shorten"</code> uses an anchor — clicking jumps to the element with <code>id="shorten"</code>. Combined with <code>html { scroll-behavior: smooth }</code> in CSS, you get smooth scrolling.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre>&lt;<span class="kw">section</span> <span class="ty">class</span>=<span class="str">"hero"</span> <span class="ty">id</span>=<span class="str">"shorten"</span>&gt;
+  &lt;<span class="kw">h1</span>&gt;Make any URL &lt;<span class="kw">span</span> <span class="ty">class</span>=<span class="str">"accent"</span>&gt;tiny&lt;/<span class="kw">span</span>&gt;.&lt;/<span class="kw">h1</span>&gt;
+  &lt;<span class="kw">p</span> <span class="ty">class</span>=<span class="str">"subtitle"</span>&gt;Paste a long link. Get a short one. Share it anywhere.&lt;/<span class="kw">p</span>&gt;
+
+  &lt;<span class="kw">form</span> <span class="ty">id</span>=<span class="str">"shorten-form"</span> <span class="ty">class</span>=<span class="str">"shorten-form"</span> <span class="ty">novalidate</span>&gt;
+    &lt;<span class="kw">input</span> <span class="ty">type</span>=<span class="str">"url"</span> <span class="ty">id</span>=<span class="str">"long-url"</span> <span class="ty">name</span>=<span class="str">"long"</span>
+      <span class="ty">placeholder</span>=<span class="str">"https://example.com/some/very/long/path?with=params"</span>
+      <span class="ty">required</span> <span class="ty">autocomplete</span>=<span class="str">"off"</span> /&gt;
+    &lt;<span class="kw">button</span> <span class="ty">type</span>=<span class="str">"submit"</span> <span class="ty">id</span>=<span class="str">"submit-btn"</span>&gt;Shorten&lt;/<span class="kw">button</span>&gt;
+  &lt;/<span class="kw">form</span>&gt;</pre>
+    <div class="why">
+      <b>Hero + form.</b>
+      <ul>
+        <li><code>&lt;span class="accent"&gt;tiny&lt;/span&gt;</code> — inline element so CSS can paint just that one word with a gradient.</li>
+        <li><code>novalidate</code> — disables the browser's default validation popup so our JS handles errors instead.</li>
+        <li><code>type="url"</code> — browsers do minimal URL validation and on mobile show a URL-friendly keyboard.</li>
+        <li><code>name="long"</code> — only matters if the form is submitted as form-data; we use JS + JSON, but it doesn't hurt to set.</li>
+        <li><code>required</code> — paired with <code>novalidate</code>, this still lets <code>el.checkValidity()</code> work if we ever wanted it.</li>
+        <li><code>id="…"</code> values are what <code>app.js</code> grabs via <code>document.querySelector</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre>&lt;<span class="kw">p</span> <span class="ty">class</span>=<span class="str">"form-error"</span> <span class="ty">id</span>=<span class="str">"form-error"</span> <span class="ty">role</span>=<span class="str">"alert"</span> <span class="ty">hidden</span>&gt;&lt;/<span class="kw">p</span>&gt;
+
+&lt;<span class="kw">div</span> <span class="ty">class</span>=<span class="str">"result-card"</span> <span class="ty">id</span>=<span class="str">"result-card"</span> <span class="ty">hidden</span>&gt;
+  &lt;<span class="kw">div</span> <span class="ty">class</span>=<span class="str">"result-row"</span>&gt;
+    &lt;<span class="kw">span</span> <span class="ty">class</span>=<span class="str">"result-label"</span>&gt;Short URL&lt;/<span class="kw">span</span>&gt;
+    &lt;<span class="kw">a</span> <span class="ty">class</span>=<span class="str">"result-link"</span> <span class="ty">id</span>=<span class="str">"result-link"</span>
+       <span class="ty">href</span>=<span class="str">"#"</span> <span class="ty">target</span>=<span class="str">"_blank"</span> <span class="ty">rel</span>=<span class="str">"noopener"</span>&gt;&lt;/<span class="kw">a</span>&gt;
+  &lt;/<span class="kw">div</span>&gt;
+  &lt;<span class="kw">button</span> <span class="ty">class</span>=<span class="str">"copy-btn"</span> <span class="ty">id</span>=<span class="str">"copy-btn"</span> <span class="ty">type</span>=<span class="str">"button"</span>&gt;Copy&lt;/<span class="kw">button</span>&gt;
+&lt;/<span class="kw">div</span>&gt;</pre>
+    <div class="why">
+      <b>Error + result containers, initially hidden.</b>
+      <ul>
+        <li><code>hidden</code> attribute — built-in way to hide an element (equivalent to <code>display:none</code>). JS toggles <code>el.hidden = false</code> to reveal.</li>
+        <li><code>role="alert"</code> — accessibility hint that screen readers should announce changes here.</li>
+        <li><code>target="_blank" rel="noopener"</code> — open the short link in a new tab. <code>noopener</code> stops the destination from using <code>window.opener</code> to navigate you elsewhere (security best practice).</li>
+        <li><code>type="button"</code> on the copy button — prevents it from being treated as a form submit.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre>&lt;<span class="kw">ul</span> <span class="ty">class</span>=<span class="str">"history-list"</span> <span class="ty">id</span>=<span class="str">"history-list"</span>&gt;
+  &lt;!-- filled by JS --&gt;
+&lt;/<span class="kw">ul</span>&gt;
+&lt;<span class="kw">p</span> <span class="ty">class</span>=<span class="str">"empty-state"</span> <span class="ty">id</span>=<span class="str">"empty-state"</span>&gt;No links yet. Shorten one above.&lt;/<span class="kw">p</span>&gt;</pre>
+    <div class="why"><b>History list placeholder.</b> The <code>&lt;ul&gt;</code> starts empty; <code>renderHistory()</code> in <code>app.js</code> reads from <code>localStorage</code> and creates <code>&lt;li&gt;</code> children at runtime.</div>
+  </div>
+
+  <div class="block">
+    <pre>&lt;<span class="kw">section</span> <span class="ty">class</span>=<span class="str">"about"</span> <span class="ty">id</span>=<span class="str">"about"</span>&gt;
+  &lt;<span class="kw">h2</span>&gt;How it works&lt;/<span class="kw">h2</span>&gt;
+  &lt;<span class="kw">div</span> <span class="ty">class</span>=<span class="str">"cards"</span>&gt;
+    &lt;<span class="kw">div</span> <span class="ty">class</span>=<span class="str">"card"</span>&gt;…1. Paste…&lt;/<span class="kw">div</span>&gt;
+    &lt;<span class="kw">div</span> <span class="ty">class</span>=<span class="str">"card"</span>&gt;…2. Encode…&lt;/<span class="kw">div</span>&gt;
+    &lt;<span class="kw">div</span> <span class="ty">class</span>=<span class="str">"card"</span>&gt;…3. Share…&lt;/<span class="kw">div</span>&gt;
+  &lt;/<span class="kw">div</span>&gt;
+&lt;/<span class="kw">section</span>&gt;</pre>
+    <div class="why"><b>"About" section.</b> Three static cards explaining the flow. Pure markup; CSS turns the <code>.cards</code> div into a responsive grid.</div>
+  </div>
+
+  <div class="block">
+    <pre>&lt;<span class="kw">script</span> <span class="ty">src</span>=<span class="str">"/static/app.js"</span>&gt;&lt;/<span class="kw">script</span>&gt;
+&lt;/<span class="kw">body</span>&gt;&lt;/<span class="kw">html</span>&gt;</pre>
+    <div class="why">
+      <b>Load the JS bundle, just before <code>&lt;/body&gt;</code>.</b> Placing scripts at the bottom means the DOM is parsed before the script runs, so <code>document.querySelector('#shorten-form')</code> reliably finds the element. (Modern alternative: <code>&lt;script defer src="…"&gt;</code> in <code>&lt;head&gt;</code>.)
+    </div>
+  </div>
+</section>
+
+<!-- ========== style.css ========== -->
+<section class="file" id="css">
+  <h2>6. frontend/style.css</h2>
+  <p class="role">Theme tokens + layout. Walking the key blocks; the file is long so we focus on patterns worth understanding rather than every selector.</p>
+
+  <div class="file-header">
+    <span class="ico">🎨</span><span class="path">frontend/style.css</span>
+    <span class="lang">CSS3</span>
+  </div>
+
+  <h3 class="subhead">CSS variables (custom properties)</h3>
+
+  <div class="block">
+    <pre><span class="kw">:root</span> {
+  <span class="ty">--bg</span>:        <span class="num">#0d1117</span>;
+  <span class="ty">--panel</span>:     <span class="num">#161b22</span>;
+  <span class="ty">--panel-2</span>:   <span class="num">#1c2330</span>;
+  <span class="ty">--border</span>:    <span class="num">#30363d</span>;
+  <span class="ty">--text</span>:      <span class="num">#e6edf3</span>;
+  <span class="ty">--muted</span>:     <span class="num">#8b949e</span>;
+  <span class="ty">--accent</span>:    <span class="num">#58a6ff</span>;
+  <span class="ty">--accent-2</span>:  <span class="num">#7ee787</span>;
+  <span class="ty">--danger</span>:    <span class="num">#ff7b72</span>;
+  <span class="ty">--warn</span>:      <span class="num">#f0883e</span>;
+  <span class="ty">--radius</span>:    <span class="num">10px</span>;
+  <span class="ty">--shadow</span>:    <span class="num">0 6px 20px rgba(0, 0, 0, 0.35)</span>;
+}</pre>
+    <div class="why">
+      <b>Design tokens declared on <code>:root</code>.</b>
+      <ul>
+        <li><code>:root</code> — the highest-level pseudo-class, matches <code>&lt;html&gt;</code>. Variables defined here cascade to every element.</li>
+        <li><code>--name: value;</code> — custom properties. Use them with <code>color: var(--accent);</code>. One swap here re-themes the whole site.</li>
+        <li>Bundling radius and shadow as variables, not just colours, keeps visual rhythm consistent.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="subhead">Reset + base</h3>
+
+  <div class="block">
+    <pre><span class="kw">*</span> { box-sizing: border-box; margin: 0; padding: 0; }
+<span class="kw">html</span> { scroll-behavior: smooth; }
+<span class="kw">body</span> {
+  font-family: -apple-system, BlinkMacSystemFont, <span class="str">"Segoe UI"</span>, Roboto, sans-serif;
+  background: <span class="kw">var</span>(<span class="ty">--bg</span>);
+  color: <span class="kw">var</span>(<span class="ty">--text</span>);
+  line-height: <span class="num">1.6</span>;
+  min-height: <span class="num">100vh</span>;
+  display: flex;
+  flex-direction: column;
+}</pre>
+    <div class="why">
+      <b>The "set sane defaults" block.</b>
+      <ul>
+        <li><code>*</code> — universal selector. Zeroing default margin/padding kills browser quirks.</li>
+        <li><code>box-sizing: border-box</code> — width includes padding and border. Without this, a 100px-wide box with 10px padding actually measures 120px. <i>Industry standard</i>.</li>
+        <li><code>scroll-behavior: smooth</code> — when an anchor link is clicked, smooth-scroll instead of jumping.</li>
+        <li><code>font-family</code> — a stack. The browser picks the first one that exists on the user's system. Apple's native font, then Microsoft's, then Android's, then a generic fallback.</li>
+        <li><code>min-height: 100vh; display: flex; flex-direction: column;</code> — the "sticky footer" trick: body fills the viewport vertically and children flow top to bottom. Footer can <code>margin-top: auto</code> to glue itself to the bottom.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="subhead">Hero + gradient text</h3>
+
+  <div class="block">
+    <pre><span class="kw">.hero h1</span> {
+  font-size: <span class="num">3rem</span>;
+  font-weight: <span class="num">800</span>;
+  margin-bottom: <span class="num">12px</span>;
+  letter-spacing: <span class="num">-1px</span>;
+}
+<span class="kw">.hero .accent</span> {
+  background: linear-gradient(<span class="num">135deg</span>, <span class="kw">var</span>(<span class="ty">--accent</span>), <span class="num">#d2a8ff</span>);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}</pre>
+    <div class="why">
+      <b>Gradient text trick.</b> Paint a gradient as the element's background, then clip the background to the text shape and make the actual font colour transparent so the gradient shows through. <code>-webkit-</code> prefix needed for Safari and older Chromes; the unprefixed form covers everyone else.
+    </div>
+  </div>
+
+  <h3 class="subhead">Form layout with flexbox</h3>
+
+  <div class="block">
+    <pre><span class="kw">.shorten-form</span> {
+  display: flex;
+  gap: <span class="num">10px</span>;
+  background: <span class="kw">var</span>(<span class="ty">--panel</span>);
+  padding: <span class="num">8px</span>;
+  border-radius: <span class="kw">var</span>(<span class="ty">--radius</span>);
+  border: <span class="num">1px solid var(--border)</span>;
+  box-shadow: <span class="kw">var</span>(<span class="ty">--shadow</span>);
+}
+<span class="kw">.shorten-form input</span> { flex: <span class="num">1</span>; }</pre>
+    <div class="why">
+      <b>One row, input grows.</b>
+      <ul>
+        <li><code>display: flex</code> — lay children out on a row (default <code>flex-direction</code> is <code>row</code>).</li>
+        <li><code>gap: 10px</code> — modern spacing between children. Replaces the old <code>margin-right</code> hacks.</li>
+        <li><code>flex: 1</code> on the input — "take all the leftover space." Button sticks to its natural width.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="subhead">Animations</h3>
+
+  <div class="block">
+    <pre><span class="kw">@keyframes</span> pop-in {
+  <span class="kw">from</span> { opacity: <span class="num">0</span>; transform: translateY(<span class="num">6px</span>); }
+  <span class="kw">to</span>   { opacity: <span class="num">1</span>; transform: translateY(<span class="num">0</span>); }
+}
+<span class="kw">.result-card</span> {
+  animation: pop-in <span class="num">0.25s</span> ease-out;
+}</pre>
+    <div class="why">
+      <b>Lightweight reveal animation.</b> Defines a keyframe sequence, then attaches it to <code>.result-card</code>. <code>ease-out</code> = fast at the start, slow at the end — feels natural. Triggered automatically when the element gains the <code>.result-card</code> styles, which in practice happens when JS un-hides it.
+    </div>
+  </div>
+
+  <h3 class="subhead">Grid for the about cards</h3>
+
+  <div class="block">
+    <pre><span class="kw">.cards</span> {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(<span class="num">220px</span>, <span class="num">1fr</span>));
+  gap: <span class="num">16px</span>;
+}</pre>
+    <div class="why">
+      <b>Auto-responsive grid in one line.</b> <code>auto-fit</code> creates as many columns as the container width allows. <code>minmax(220px, 1fr)</code> means each column is at least 220px but can grow equally to fill space. On a phone you get 1 column; on a wide screen you get 3. No media queries needed.
+    </div>
+  </div>
+
+  <h3 class="subhead">Mobile breakpoint</h3>
+
+  <div class="block">
+    <pre><span class="kw">@media</span> (max-width: <span class="num">600px</span>) {
+  .shorten-form { flex-direction: column; }
+  .shorten-form button { width: <span class="num">100%</span>; }
+  .result-card  { flex-direction: column; align-items: flex-start; gap: <span class="num">12px</span>; }
+}</pre>
+    <div class="why">
+      <b>One media query for phones.</b> When the viewport is ≤600px wide, stack the form vertically and let the button span the row. Phones get an easy-to-tap layout; everyone else keeps the original.
+    </div>
+  </div>
+</section>
+
+<!-- ========== app.js ========== -->
+<section class="file" id="appjs">
+  <h2>7. frontend/app.js</h2>
+  <p class="role">Form submission, fetch, history, copy. Pure browser JS — no frameworks.</p>
+
+  <div class="file-header">
+    <span class="ico">⚡</span><span class="path">frontend/app.js</span>
+    <span class="lang">JavaScript (ES2017+)</span>
+  </div>
+
+  <h3 class="subhead">The async/await + event-loop visual</h3>
+  <div class="visual">
+    <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arJ" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+          <polygon points="0 0,10 5,0 10" fill="#58a6ff"/>
+        </marker>
+      </defs>
+      <circle cx="130" cy="110" r="70" fill="none" stroke="#58a6ff" stroke-width="2"/>
+      <text x="130" y="105" text-anchor="middle" fill="#e6edf3" font-size="13">Call</text>
+      <text x="130" y="122" text-anchor="middle" fill="#e6edf3" font-size="13">Stack</text>
+
+      <rect x="250" y="60" width="160" height="100" rx="10" fill="#1c2330" stroke="#7ee787"/>
+      <text x="330" y="92" text-anchor="middle" fill="#7ee787" font-size="13">Browser APIs</text>
+      <text x="330" y="112" text-anchor="middle" fill="#8b949e" font-size="11">fetch (network)</text>
+      <text x="330" y="130" text-anchor="middle" fill="#8b949e" font-size="11">DOM events, timers</text>
+
+      <rect x="460" y="60" width="160" height="100" rx="10" fill="#1c2330" stroke="#f0883e"/>
+      <text x="540" y="92" text-anchor="middle" fill="#f0883e" font-size="13">Task / Microtask Queue</text>
+      <text x="540" y="112" text-anchor="middle" fill="#8b949e" font-size="11">await resumes here</text>
+
+      <path d="M 200 110 Q 225 110 250 110" stroke="#58a6ff" fill="none" stroke-width="2" marker-end="url(#arJ)"/>
+      <path d="M 410 110 Q 435 110 460 110" stroke="#58a6ff" fill="none" stroke-width="2" marker-end="url(#arJ)"/>
+      <path d="M 540 160 Q 330 210 160 180" stroke="#d2a8ff" fill="none" stroke-width="2" marker-end="url(#arJ)"/>
+      <text x="350" y="205" fill="#d2a8ff" font-size="11">event loop drains queue back into stack</text>
+    </svg>
+    <div class="caption">Single thread + queue. <code>await fetch()</code> hands control back to the browser; the rest of the function resumes when the network reply arrives.</div>
+  </div>
+
+  <h3 class="subhead">1. DOM references</h3>
+
+  <div class="block">
+    <pre><span class="kw">const</span> form        = document.querySelector(<span class="str">'#shorten-form'</span>);
+<span class="kw">const</span> input       = document.querySelector(<span class="str">'#long-url'</span>);
+<span class="kw">const</span> submitBtn   = document.querySelector(<span class="str">'#submit-btn'</span>);
+<span class="kw">const</span> errorEl     = document.querySelector(<span class="str">'#form-error'</span>);
+<span class="kw">const</span> resultCard  = document.querySelector(<span class="str">'#result-card'</span>);
+<span class="kw">const</span> resultLink  = document.querySelector(<span class="str">'#result-link'</span>);
+<span class="kw">const</span> copyBtn     = document.querySelector(<span class="str">'#copy-btn'</span>);
+<span class="kw">const</span> historyList = document.querySelector(<span class="str">'#history-list'</span>);
+<span class="kw">const</span> emptyState  = document.querySelector(<span class="str">'#empty-state'</span>);
+<span class="kw">const</span> clearBtn    = document.querySelector(<span class="str">'#clear-history'</span>);</pre>
+    <div class="why">
+      <b>Cache element references once.</b>
+      <ul>
+        <li><code>const</code> — block-scoped, can't be reassigned (the variable can't, but the object it points to is mutable).</li>
+        <li><code>document.querySelector('#x')</code> — CSS-style selector. <code>#x</code> = <code>id="x"</code>. Returns the first match or <code>null</code>.</li>
+        <li>Looking these up once at startup is faster than re-querying every event.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">const</span> STORAGE_KEY = <span class="str">'tinylink.history'</span>;
+<span class="kw">const</span> BASE_URL    = window.location.origin;</pre>
+    <div class="why">
+      <b>Two constants.</b>
+      <ul>
+        <li><code>STORAGE_KEY</code> — name under which the history list lives in <code>localStorage</code>. Namespacing with a prefix keeps it from clashing with other apps on the same domain.</li>
+        <li><code>window.location.origin</code> — current scheme + host + port (e.g. <code>http://localhost:8000</code>). Not actually used elsewhere since all fetches are same-origin; kept around as a reference.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="subhead">2. URL validation</h3>
+
+  <div class="block">
+    <pre><span class="kw">function</span> isValidUrl(str) {
+  <span class="kw">try</span> {
+    <span class="kw">const</span> u = <span class="kw">new</span> URL(str);
+    <span class="kw">return</span> u.protocol === <span class="str">'http:'</span> || u.protocol === <span class="str">'https:'</span>;
+  } <span class="kw">catch</span> {
+    <span class="kw">return false</span>;
+  }
+}</pre>
+    <div class="why">
+      <b>Use the built-in <code>URL</code> parser.</b>
+      <ul>
+        <li><code>new URL(str)</code> throws if the string is malformed; the <code>try/catch</code> turns that into a boolean.</li>
+        <li>Restricting to http(s) prevents users from pasting <code>javascript:</code> or <code>data:</code> URLs that the server doesn't need to deal with.</li>
+        <li>The server <i>also</i> validates with Pydantic's <code>HttpUrl</code>. Belt-and-suspenders.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="subhead">3. Real backend call</h3>
+
+  <div class="block">
+    <pre><span class="kw">async function</span> shorten(longUrl) {
+  <span class="kw">const</span> res = <span class="kw">await</span> fetch(<span class="str">'/api/shorten'</span>, {
+    method:  <span class="str">'POST'</span>,
+    headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+    body:    JSON.stringify({ long: longUrl })
+  });
+  <span class="kw">if</span> (!res.ok) {
+    <span class="kw">const</span> msg = <span class="kw">await</span> res.text().<span class="kw">catch</span>(() =&gt; <span class="str">''</span>);
+    <span class="kw">throw new</span> Error(<span class="str">`API ${res.status}: ${msg || 'request failed'}`</span>);
+  }
+  <span class="kw">return</span> res.json();
+}</pre>
+    <div class="why">
+      <b>Network call, line by line.</b>
+      <ul>
+        <li><code>async function</code> — turns the function into one that always returns a Promise. Lets you use <code>await</code> inside.</li>
+        <li><code>fetch(url, options)</code> — Browser API for HTTP. Returns a Promise that resolves to a <code>Response</code> object.</li>
+        <li><code>method: 'POST'</code> — HTTP verb; matches the backend's <code>@app.post</code>.</li>
+        <li><code>headers: { 'Content-Type': 'application/json' }</code> — tells the server how to decode the body. Without this, FastAPI can't parse the JSON.</li>
+        <li><code>body: JSON.stringify({ long: longUrl })</code> — turn a JS object into a JSON string. The shape <code>{ long: ... }</code> matches Pydantic's <code>ShortenIn</code> model.</li>
+        <li><code>res.ok</code> — true if status is 200–299. <code>fetch</code> does <i>not</i> throw on 4xx/5xx, so this manual check is required.</li>
+        <li><code>await res.text().catch(() =&gt; '')</code> — read the error body, but if reading fails, fall back to an empty string. Chaining <code>.catch</code> on a Promise inside an await is a clean way to swallow a secondary failure.</li>
+        <li><code>throw new Error(…)</code> — surfaces a meaningful message to the caller's <code>try/catch</code>.</li>
+        <li><code>res.json()</code> — parse the response body as JSON. Also async.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="subhead">4–5. History helpers</h3>
+
+  <div class="block">
+    <pre><span class="kw">function</span> loadHistory() {
+  <span class="kw">try</span> {
+    <span class="kw">return</span> JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } <span class="kw">catch</span> {
+    <span class="kw">return</span> [];
+  }
+}
+<span class="kw">function</span> saveHistory(list) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+<span class="kw">function</span> addToHistory(entry) {
+  <span class="kw">const</span> list = loadHistory();
+  list.unshift({ ...entry, at: Date.now() });
+  saveHistory(list.slice(<span class="num">0</span>, <span class="num">20</span>));
+  renderHistory();
+}</pre>
+    <div class="why">
+      <b>localStorage as a tiny database.</b>
+      <ul>
+        <li><code>localStorage.getItem(key)</code> returns a string or <code>null</code>. <code>JSON.parse(null)</code> happens to return <code>null</code>, so the <code>|| []</code> fallback handles both "never saved" and "empty save."</li>
+        <li><code>try/catch</code> guards against the user manually corrupting storage.</li>
+        <li><code>list.unshift(x)</code> — push <code>x</code> at the front. Newest first.</li>
+        <li><code>{ ...entry, at: Date.now() }</code> — object spread copies <code>entry</code> and tacks on a timestamp without mutating the original.</li>
+        <li><code>list.slice(0, 20)</code> — keep only the latest 20. Cheap quota cap.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">function</span> renderHistory() {
+  <span class="kw">const</span> list = loadHistory();
+  historyList.innerHTML = <span class="str">''</span>;
+
+  <span class="kw">if</span> (list.length === <span class="num">0</span>) {
+    emptyState.hidden = <span class="kw">false</span>;
+    <span class="kw">return</span>;
+  }
+  emptyState.hidden = <span class="kw">true</span>;
+
+  <span class="kw">for</span> (<span class="kw">const</span> entry <span class="kw">of</span> list) {
+    <span class="kw">const</span> li = document.createElement(<span class="str">'li'</span>);
+    li.className = <span class="str">'history-item'</span>;
+    li.innerHTML = <span class="str">`
+      &lt;div class="history-meta"&gt;
+        &lt;a class="history-short" href="${entry.short}" target="_blank" rel="noopener"&gt;${entry.short}&lt;/a&gt;
+        &lt;span class="history-long" title="${entry.long}"&gt;${entry.long}&lt;/span&gt;
+      &lt;/div&gt;
+      &lt;div class="history-actions"&gt;
+        &lt;button class="icon-btn" data-action="copy" data-short="${entry.short}" title="Copy"&gt;📋&lt;/button&gt;
+        &lt;button class="icon-btn del" data-action="del" data-code="${entry.code}" title="Delete"&gt;✕&lt;/button&gt;
+      &lt;/div&gt;
+    `</span>;
+    historyList.appendChild(li);
+  }
+}</pre>
+    <div class="why">
+      <b>Re-render the entire list on every change.</b> Cheap for ≤20 items and keeps state mental-model simple (data → DOM, one direction).
+      <ul>
+        <li><code>historyList.innerHTML = ''</code> — wipe children. Faster than removing them one by one.</li>
+        <li><code>document.createElement('li')</code> + <code>appendChild</code> — DOM API for new nodes.</li>
+        <li>Template literals (<code>` `</code>) with <code>${…}</code> interpolation build HTML inline.</li>
+        <li><code>data-*</code> attributes — custom data we read back via <code>btn.dataset.action</code>. Avoids per-button event listeners.</li>
+      </ul>
+      <b>Security note:</b> we're concatenating user-supplied URLs into raw HTML via <code>innerHTML</code>. For a real product, sanitise or use <code>textContent</code>/<code>setAttribute</code> to avoid XSS if the long URL contains <code>&lt;script&gt;</code>. The server already validates <code>HttpUrl</code>, which limits the surface, but be aware.
+    </div>
+  </div>
+
+  <h3 class="subhead">6. Clipboard</h3>
+
+  <div class="block">
+    <pre><span class="kw">async function</span> copyText(text, btn) {
+  <span class="kw">try</span> {
+    <span class="kw">await</span> navigator.clipboard.writeText(text);
+    <span class="kw">if</span> (btn) {
+      <span class="kw">const</span> original = btn.textContent;
+      btn.textContent = <span class="str">'Copied!'</span>;
+      btn.classList.add(<span class="str">'copied'</span>);
+      setTimeout(() =&gt; {
+        btn.textContent = original;
+        btn.classList.remove(<span class="str">'copied'</span>);
+      }, <span class="num">1200</span>);
+    }
+  } <span class="kw">catch</span> (err) { console.error(<span class="str">'Clipboard failed'</span>, err); }
+}</pre>
+    <div class="why">
+      <b>Async clipboard API.</b> <code>navigator.clipboard.writeText</code> returns a Promise; awaits resolution. After success, swap the button label and add the <code>.copied</code> class for visual feedback, then revert after 1.2 seconds. Falls into <code>catch</code> if the user denied clipboard permission.
+    </div>
+  </div>
+
+  <h3 class="subhead">8. Submit handler</h3>
+
+  <div class="block">
+    <pre>form.addEventListener(<span class="str">'submit'</span>, <span class="kw">async</span> (e) =&gt; {
+  e.preventDefault();
+  clearError();
+  resultCard.hidden = <span class="kw">true</span>;
+
+  <span class="kw">const</span> longUrl = input.value.trim();
+  <span class="kw">if</span> (!isValidUrl(longUrl)) {
+    showError(<span class="str">'Please enter a valid http(s) URL.'</span>);
+    <span class="kw">return</span>;
+  }
+
+  submitBtn.disabled = <span class="kw">true</span>;
+  submitBtn.textContent = <span class="str">'Shortening…'</span>;
+
+  <span class="kw">try</span> {
+    <span class="kw">const</span> data = <span class="kw">await</span> shorten(longUrl);
+    resultLink.href = data.short;
+    resultLink.textContent = data.short;
+    resultCard.hidden = <span class="kw">false</span>;
+
+    addToHistory(data);
+    input.value = <span class="str">''</span>;
+  } <span class="kw">catch</span> (err) {
+    showError(<span class="str">'Something went wrong. Try again.'</span>);
+    console.error(err);
+  } <span class="kw">finally</span> {
+    submitBtn.disabled = <span class="kw">false</span>;
+    submitBtn.textContent = <span class="str">'Shorten'</span>;
+  }
+});</pre>
+    <div class="why">
+      <b>The orchestrator.</b>
+      <ul>
+        <li><code>addEventListener('submit', async (e) =&gt; …)</code> — modern way to attach a handler. Arrow function so <code>this</code> is irrelevant.</li>
+        <li><code>e.preventDefault()</code> — stops the browser's default form submission (full-page reload). Crucial for SPAs.</li>
+        <li><code>input.value.trim()</code> — strip whitespace. Users paste with leading spaces.</li>
+        <li><code>submitBtn.disabled = true</code> — prevent double-clicks while the request is in flight.</li>
+        <li><code>try / catch / finally</code> — happy path inside <code>try</code>, network errors caught, button re-enabled in <code>finally</code> regardless. Same pattern as Python.</li>
+        <li><code>await shorten(...)</code> — pauses this function, lets the event loop process other work. When the server replies, execution resumes on the next line.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="subhead">10. Event delegation for history rows</h3>
+
+  <div class="block">
+    <pre>historyList.addEventListener(<span class="str">'click'</span>, (e) =&gt; {
+  <span class="kw">const</span> btn = e.target.closest(<span class="str">'button[data-action]'</span>);
+  <span class="kw">if</span> (!btn) <span class="kw">return</span>;
+
+  <span class="kw">if</span> (btn.dataset.action === <span class="str">'copy'</span>) {
+    copyText(btn.dataset.short, btn);
+  } <span class="kw">else if</span> (btn.dataset.action === <span class="str">'del'</span>) {
+    deleteFromHistory(btn.dataset.code);
+  }
+});</pre>
+    <div class="why">
+      <b>One listener, many buttons.</b> Attaching a listener to every history row would be wasteful and would re-attach on every re-render. Instead, attach <i>once</i> to the parent <code>&lt;ul&gt;</code>; clicks bubble up. <code>e.target.closest(selector)</code> walks up the DOM until it finds a matching ancestor (or null). <code>dataset.action</code> reads the <code>data-action</code> attribute.
+    </div>
+  </div>
+
+  <h3 class="subhead">12. Boot</h3>
+
+  <div class="block">
+    <pre>renderHistory();</pre>
+    <div class="why"><b>Run once at load.</b> Reads <code>localStorage</code> and either shows existing items or the empty state.</div>
+  </div>
+</section>
+
+<!-- ========== requirements.txt ========== -->
+<section class="file" id="req">
+  <h2>8. requirements.txt</h2>
+  <p class="role">Pinned Python dependencies so installs are reproducible.</p>
+
+  <div class="file-header">
+    <span class="ico">📋</span><span class="path">requirements.txt</span>
+    <span class="lang">pip</span>
+  </div>
+
+  <div class="block">
+    <pre>fastapi==<span class="num">0.115.0</span>
+uvicorn[standard]==<span class="num">0.30.6</span>
+pydantic==<span class="num">2.9.2</span>
+httpx==<span class="num">0.27.2</span>
+pytest==<span class="num">8.3.3</span></pre>
+    <div class="why">
+      <b>Five lines, five jobs.</b>
+      <ul>
+        <li><code>fastapi</code> — the web framework.</li>
+        <li><code>uvicorn[standard]</code> — the ASGI server that actually opens the socket. The <code>[standard]</code> extra pulls in <code>httptools</code>, <code>uvloop</code>, and <code>websockets</code> for speed and websocket support.</li>
+        <li><code>pydantic</code> — schema/validation. FastAPI ships pydantic as a hard dep too, but pinning it ourselves locks the version.</li>
+        <li><code>httpx</code> — required by FastAPI's <code>TestClient</code> for the test suite.</li>
+        <li><code>pytest</code> — test runner.</li>
+      </ul>
+      Exact <code>==</code> pins mean <code>pip install -r requirements.txt</code> installs the same version everywhere — your laptop, CI, the Docker image. Use <code>pip-compile</code> or <code>uv pip compile</code> to lock transitive deps too if you're shipping to production.
+    </div>
+  </div>
+</section>
+
+<!-- ========== tests ========== -->
+<section class="file" id="tests">
+  <h2>9. tests/</h2>
+  <p class="role">Two files: pure-function tests for base62 and end-to-end API tests using FastAPI's TestClient.</p>
+
+  <div class="file-header">
+    <span class="ico">🧪</span><span class="path">tests/test_base62.py</span>
+    <span class="lang">pytest</span>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">from</span> backend.base62 <span class="kw">import</span> decode, encode
+
+<span class="kw">def</span> test_encodes_zero():
+    <span class="kw">assert</span> encode(<span class="num">0</span>) == <span class="str">"0"</span>
+
+<span class="kw">def</span> test_encodes_125():
+    <span class="kw">assert</span> encode(<span class="num">125</span>) == <span class="str">"21"</span>
+
+<span class="kw">def</span> test_round_trip():
+    <span class="kw">for</span> n <span class="kw">in</span> [<span class="num">1</span>, <span class="num">62</span>, <span class="num">125</span>, <span class="num">100_000</span>, <span class="num">10_000_000_000</span>]:
+        <span class="kw">assert</span> decode(encode(n)) == n
+
+<span class="kw">def</span> test_decode_invalid_char():
+    <span class="kw">import</span> pytest
+    <span class="kw">with</span> pytest.raises(<span class="ty">ValueError</span>):
+        decode(<span class="str">"ab!"</span>)</pre>
+    <div class="why">
+      <b>Plain functions named <code>test_*</code>.</b> pytest auto-discovers them. <code>assert</code> failures show the actual + expected values in a readable diff.
+      <ul>
+        <li>The <code>round_trip</code> property test — encode then decode should give back the original — covers many cases at once. The kind of test that catches the off-by-one bug you didn't think of.</li>
+        <li><code>pytest.raises</code> — assertion that the block <i>does</i> raise. Wraps a context manager. Inverse of a normal assert.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="file-header">
+    <span class="ico">🧪</span><span class="path">tests/test_api.py</span>
+    <span class="lang">pytest + TestClient</span>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">@pytest</span>.fixture()
+<span class="kw">def</span> client(tmp_path, monkeypatch):
+    db_file = tmp_path / <span class="str">"test.db"</span>
+    monkeypatch.setenv(<span class="str">"TINYLINK_DB"</span>, <span class="kw">str</span>(db_file))
+    <span class="kw">import</span> importlib
+    <span class="kw">import</span> backend.db <span class="kw">as</span> db_module
+    importlib.reload(db_module)
+    <span class="kw">import</span> backend.main <span class="kw">as</span> main_module
+    importlib.reload(main_module)
+    <span class="kw">return</span> TestClient(main_module.app)</pre>
+    <div class="why">
+      <b>Test isolation via env var + reload.</b>
+      <ul>
+        <li><code>tmp_path</code> is a pytest built-in fixture: a fresh temp directory per test.</li>
+        <li><code>monkeypatch.setenv</code> sets <code>TINYLINK_DB</code> just for this test; reverted automatically afterwards.</li>
+        <li><code>importlib.reload</code> re-executes the module so the new env var is picked up by <code>DB_PATH = os.environ.get(...)</code>. Without reload, the module would still hold the original (project-level) path.</li>
+        <li><code>TestClient</code> — wraps the FastAPI app and lets you call <code>.get()/.post()</code> without spinning up an actual server. Runs requests in-process.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">def</span> test_shorten_returns_code(client):
+    res = client.post(<span class="str">"/api/shorten"</span>, json={<span class="str">"long"</span>: <span class="str">"https://example.com/"</span>})
+    <span class="kw">assert</span> res.status_code == <span class="num">200</span>
+    data = res.json()
+    <span class="kw">assert</span> data[<span class="str">"code"</span>]
+    <span class="kw">assert</span> data[<span class="str">"long"</span>] == <span class="str">"https://example.com/"</span>
+    <span class="kw">assert</span> data[<span class="str">"short"</span>].endswith(<span class="str">"/"</span> + data[<span class="str">"code"</span>])</pre>
+    <div class="why">
+      <b>Three assertions for one feature.</b> Shape of the response, identity of the long URL, and consistency between <code>code</code> and <code>short</code>.
+    </div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">def</span> test_redirect_returns_302(client):
+    res = client.post(<span class="str">"/api/shorten"</span>, json={<span class="str">"long"</span>: <span class="str">"https://example.com/x"</span>})
+    code = res.json()[<span class="str">"code"</span>]
+    follow = client.get(<span class="str">f"/{code}"</span>, follow_redirects=<span class="kw">False</span>)
+    <span class="kw">assert</span> follow.status_code == <span class="num">302</span>
+    <span class="kw">assert</span> follow.headers[<span class="str">"location"</span>] == <span class="str">"https://example.com/x"</span></pre>
+    <div class="why">
+      <b>End-to-end: shorten then follow.</b> <code>follow_redirects=False</code> stops the client from chasing the 302 — we want to inspect the 302 itself.
+    </div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">def</span> test_bad_url_rejected(client):
+    res = client.post(<span class="str">"/api/shorten"</span>, json={<span class="str">"long"</span>: <span class="str">"not a url"</span>})
+    <span class="kw">assert</span> res.status_code == <span class="num">422</span></pre>
+    <div class="why">
+      <b>Validation test.</b> Pydantic's <code>HttpUrl</code> rejects "not a url" → FastAPI returns 422 automatically. Verifies the contract without writing any validation code in the handler.
+    </div>
+  </div>
+</section>
+
+<!-- ========== Dockerfile ========== -->
+<section class="file" id="docker">
+  <h2>10. Dockerfile</h2>
+  <p class="role">Recipe for building a reproducible container image.</p>
+
+  <div class="file-header">
+    <span class="ico">🐳</span><span class="path">Dockerfile</span>
+    <span class="lang">Docker</span>
+  </div>
+
+  <div class="visual">
+    <svg viewBox="0 0 620 170" xmlns="http://www.w3.org/2000/svg">
+      <rect x="20" y="40" width="160" height="100" rx="10" fill="#1c2330" stroke="#58a6ff"/>
+      <text x="100" y="62" text-anchor="middle" fill="#58a6ff" font-size="13" font-weight="bold">Image (read-only)</text>
+      <rect x="40" y="78" width="120" height="18" fill="#0d1117" stroke="#30363d"/>
+      <text x="100" y="92" text-anchor="middle" fill="#8b949e" font-size="11">backend + frontend</text>
+      <rect x="40" y="100" width="120" height="18" fill="#0d1117" stroke="#30363d"/>
+      <text x="100" y="114" text-anchor="middle" fill="#8b949e" font-size="11">python 3.12 + deps</text>
+      <rect x="40" y="122" width="120" height="14" fill="#0d1117" stroke="#30363d"/>
+      <text x="100" y="133" text-anchor="middle" fill="#8b949e" font-size="10">debian-slim base</text>
+
+      <defs>
+        <marker id="arD" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+          <polygon points="0 0,10 5,0 10" fill="#58a6ff"/>
+        </marker>
+      </defs>
+      <line x1="180" y1="90" x2="230" y2="90" stroke="#58a6ff" stroke-width="2" marker-end="url(#arD)"/>
+      <text x="205" y="80" text-anchor="middle" fill="#8b949e" font-size="11">docker run</text>
+
+      <rect x="240" y="40" width="120" height="100" rx="8" fill="#1c2330" stroke="#7ee787"/>
+      <text x="300" y="92" text-anchor="middle" fill="#7ee787" font-size="13">Container 1</text>
+      <rect x="380" y="40" width="120" height="100" rx="8" fill="#1c2330" stroke="#7ee787"/>
+      <text x="440" y="92" text-anchor="middle" fill="#7ee787" font-size="13">Container 2</text>
+      <text x="540" y="90" fill="#8b949e" font-size="11">…</text>
+      <text x="540" y="105" fill="#8b949e" font-size="11">N copies</text>
+    </svg>
+    <div class="caption">Build the image once; run it as many isolated containers as you like.</div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">FROM</span> python:<span class="num">3.12</span>-slim</pre>
+    <div class="why">
+      <b>Pick the base.</b> <code>python:3.12-slim</code> is the official Python 3.12 image on a stripped-down Debian. Much smaller than the default <code>python:3.12</code> (~120MB vs ~1GB) while keeping pip and most stdlib working.
+    </div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">WORKDIR</span> /app</pre>
+    <div class="why"><b>Set the working directory inside the container.</b> All subsequent <code>COPY</code> and <code>RUN</code> commands act relative to <code>/app</code>. Also <code>cd /app</code> when the container starts.</div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">COPY</span> requirements.txt .
+<span class="kw">RUN</span> pip install --no-cache-dir -r requirements.txt</pre>
+    <div class="why">
+      <b>Install deps <i>before</i> copying app code.</b> Docker layer-caches each step. If only your application code changes, this layer stays cached and rebuilds are fast. If <code>requirements.txt</code> changes, deps reinstall — that's the trigger you want.
+      <ul>
+        <li><code>--no-cache-dir</code> — don't keep pip's wheel cache inside the image. Smaller final size.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">COPY</span> backend ./backend
+<span class="kw">COPY</span> frontend ./frontend</pre>
+    <div class="why"><b>Copy the actual source last.</b> Most-changing files in the highest layer → maximal cache use during iteration.</div>
+  </div>
+
+  <div class="block">
+    <pre><span class="kw">EXPOSE</span> <span class="num">8000</span>
+<span class="kw">CMD</span> [<span class="str">"uvicorn"</span>, <span class="str">"backend.main:app"</span>, <span class="str">"--host"</span>, <span class="str">"0.0.0.0"</span>, <span class="str">"--port"</span>, <span class="str">"8000"</span>]</pre>
+    <div class="why">
+      <b>How to run the container.</b>
+      <ul>
+        <li><code>EXPOSE 8000</code> — documentation only; doesn't actually publish the port. <code>docker run -p 8000:8000</code> does that.</li>
+        <li><code>CMD ["…", …]</code> — exec form (vs shell form). The container's PID 1 is uvicorn directly — no shell wrapping it. Signals like SIGTERM reach uvicorn cleanly so it can shut down gracefully.</li>
+        <li><code>--host 0.0.0.0</code> — listen on every interface, not just localhost. Without this, the port forward doesn't reach you.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ========== docker-compose.yml ========== -->
+<section class="file" id="compose">
+  <h2>11. docker-compose.yml</h2>
+  <p class="role">One file, one command, app comes up.</p>
+
+  <div class="file-header">
+    <span class="ico">📦</span><span class="path">docker-compose.yml</span>
+    <span class="lang">YAML</span>
+  </div>
+
+  <div class="block">
+    <pre>services:
+  app:
+    build: .
+    ports:
+      - <span class="str">"8000:8000"</span>
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+    environment:
+      TINYLINK_DB: /app/backend/tinylink.db</pre>
+    <div class="why">
+      <b>The shape of compose.</b>
+      <ul>
+        <li><code>services:</code> — a map of named containers. <code>app</code> is our only one (add a <code>cache:</code> service later if you wire in Redis).</li>
+        <li><code>build: .</code> — build from the Dockerfile in the current directory.</li>
+        <li><code>ports: "8000:8000"</code> — map host port 8000 → container port 8000. Visit <code>http://localhost:8000</code> on your laptop.</li>
+        <li><code>volumes:</code> — bind-mount host directories into the container. Edits to <code>backend/</code> on your laptop are seen by the running container; combined with <code>--reload</code>, you'd get live restart.</li>
+        <li><code>environment:</code> — set env vars inside the container. <code>TINYLINK_DB</code> overrides the default DB path so the SQLite file lives in the mounted volume and survives container restarts.</li>
+      </ul>
+      Run with <code>docker compose up --build</code>.
+    </div>
+  </div>
+</section>
+
+<!-- ========== Run ========== -->
+<section class="file" id="run">
+  <h2>12. Run it</h2>
+  <p class="role">Three ways to launch the project. Pick one.</p>
+
+  <h3 class="subhead">Native (recommended for hacking)</h3>
+  <pre><span class="com"># once</span>
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+<span class="com"># every time</span>
+uvicorn backend.main:app --reload --port 8000
+
+<span class="com"># open</span>
+http://localhost:8000</pre>
+
+  <h3 class="subhead">Tests</h3>
+  <pre>pytest -v</pre>
+
+  <h3 class="subhead">Docker</h3>
+  <pre>docker compose up --build</pre>
+
+  <h3 class="subhead">Smoke-test the API by hand</h3>
+  <pre>curl -X POST http://localhost:8000/api/shorten \
+     -H <span class="str">'Content-Type: application/json'</span> \
+     -d <span class="str">'{"long":"https://example.com/foo"}'</span>
+<span class="com"># =&gt; {"code":"1","short":"http://localhost:8000/1","long":"https://example.com/foo"}</span>
+
+curl -i http://localhost:8000/1
+<span class="com"># =&gt; HTTP/1.1 302 Found
+# =&gt; location: https://example.com/foo</span></pre>
+
+  <div class="callout">
+    <b>Swagger UI</b> at <a href="http://localhost:8000/docs">http://localhost:8000/docs</a> — fire requests from your browser without writing a curl.
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>TinyLink · explained block by block · every file, every line · companion to <a href="url-shortener-tech-stack.html">url-shortener-tech-stack.html</a></p>
+</footer>
+
+</body>
+</html>

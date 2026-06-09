@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TinyLink — URL Shortener</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <!-- ======= TOP NAV ======= -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">🔗</span>
+      <span class="brand-name">TinyLink</span>
+    </div>
+    <nav class="nav-links">
+      <a href="#shorten">Shorten</a>
+      <a href="#history">History</a>
+      <a href="#about">About</a>
+    </nav>
+  </header>
+
+  <!-- ======= HERO + FORM ======= -->
+  <section class="hero" id="shorten">
+    <h1>Make any URL <span class="accent">tiny</span>.</h1>
+    <p class="subtitle">Paste a long link. Get a short one. Share it anywhere.</p>
+
+    <form id="shorten-form" class="shorten-form" novalidate>
+      <input
+        type="url"
+        id="long-url"
+        name="long"
+        placeholder="https://example.com/some/very/long/path?with=params"
+        required
+        autocomplete="off"
+      />
+      <button type="submit" id="submit-btn">Shorten</button>
+    </form>
+
+    <p class="form-error" id="form-error" role="alert" hidden></p>
+
+    <!-- result card appears here -->
+    <div class="result-card" id="result-card" hidden>
+      <div class="result-row">
+        <span class="result-label">Short URL</span>
+        <a class="result-link" id="result-link" href="#" target="_blank" rel="noopener"></a>
+      </div>
+      <button class="copy-btn" id="copy-btn" type="button">Copy</button>
+    </div>
+  </section>
+
+  <!-- ======= HISTORY ======= -->
+  <section class="history" id="history">
+    <div class="section-head">
+      <h2>Your recent links</h2>
+      <button id="clear-history" class="ghost-btn" type="button">Clear</button>
+    </div>
+
+    <ul class="history-list" id="history-list">
+      <!-- filled by JS -->
+    </ul>
+
+    <p class="empty-state" id="empty-state">No links yet. Shorten one above.</p>
+  </section>
+
+  <!-- ======= ABOUT ======= -->
+  <section class="about" id="about">
+    <h2>How it works</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">📝</div>
+        <h3>1. Paste</h3>
+        <p>Drop any long URL into the form.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚙️</div>
+        <h3>2. Encode</h3>
+        <p>Server assigns an ID, encodes it Base62 → short code.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🚀</div>
+        <h3>3. Share</h3>
+        <p>Click the short link → 302 redirect to the original.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>TinyLink demo · Built with HTML + CSS + vanilla JS</p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

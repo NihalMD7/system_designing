@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>URL Shortener — Build Guide</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel2: #1c2330;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #7ee787;
+    --warn: #f0883e;
+    --danger: #ff7b72;
+    --purple: #d2a8ff;
+    --pink: #ff9ec7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  header {
+    background: linear-gradient(135deg, #1f6feb, #8957e5);
+    padding: 60px 24px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { margin: 0; font-size: 2.6rem; letter-spacing: 0.5px; }
+  header p { margin: 12px 0 0; font-size: 1.1rem; opacity: 0.9; }
+
+  nav.toc {
+    position: sticky;
+    top: 0;
+    background: rgba(13,17,23,0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    z-index: 100;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    font-size: 0.9rem;
+  }
+  nav.toc a {
+    color: var(--accent);
+    text-decoration: none;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: background 0.2s;
+  }
+  nav.toc a:hover { background: var(--panel); }
+
+  main { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+
+  section { margin-bottom: 64px; }
+  h2 {
+    font-size: 1.8rem;
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 8px;
+    margin-bottom: 24px;
+    color: var(--accent);
+  }
+  h3 { color: var(--accent2); margin-top: 28px; }
+  h4 { color: var(--purple); margin-top: 20px; }
+
+  /* Flowchart */
+  .flowchart {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 24px;
+    background: var(--panel);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .flow-node {
+    width: 100%;
+    max-width: 520px;
+    padding: 16px 24px;
+    border-radius: 10px;
+    background: var(--panel2);
+    border: 2px solid var(--border);
+    text-align: center;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .flow-node:hover { transform: scale(1.02); border-color: var(--accent); }
+  .flow-node.start { border-color: var(--accent2); background: rgba(126,231,135,0.08); }
+  .flow-node.end { border-color: var(--pink); background: rgba(255,158,199,0.08); }
+  .flow-node h4 { margin: 0 0 6px; color: var(--accent); }
+  .flow-node p { margin: 0; font-size: 0.9rem; color: var(--muted); }
+  .arrow {
+    width: 0; height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 14px solid var(--accent);
+  }
+
+  /* Index grid */
+  .index-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .phase-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .phase-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+  .phase-card .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .phase-card ol { padding-left: 20px; margin: 8px 0 0; }
+  .phase-card li { margin: 4px 0; font-size: 0.92rem; }
+
+  /* Skills */
+  .skill-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  .skill-cat {
+    background: var(--panel);
+    border-left: 4px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 6px;
+  }
+  .skill-cat h4 { margin-top: 0; color: var(--accent2); }
+  .skill-cat ul { padding-left: 18px; margin: 8px 0 0; }
+  .skill-cat li { font-size: 0.9rem; margin: 3px 0; }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    font-size: 0.75rem;
+    margin: 2px;
+    color: var(--muted);
+  }
+
+  /* Architecture */
+  .arch-diagram {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--panel);
+    padding: 30px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .arch-box {
+    flex: 1;
+    min-width: 140px;
+    text-align: center;
+    padding: 20px 12px;
+    background: var(--panel2);
+    border-radius: 8px;
+    border: 2px solid var(--border);
+  }
+  .arch-box .icon { font-size: 2rem; margin-bottom: 6px; }
+  .arch-box.client { border-color: var(--accent2); }
+  .arch-box.api { border-color: var(--accent); }
+  .arch-box.cache { border-color: var(--warn); }
+  .arch-box.db { border-color: var(--purple); }
+  .arch-arrow {
+    font-size: 1.6rem;
+    color: var(--muted);
+    align-self: center;
+  }
+
+  /* Basics */
+  .basic-block {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .basic-block h3 { margin-top: 0; }
+  code, pre {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    background: var(--panel2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.88rem;
+    color: var(--accent2);
+  }
+  pre {
+    padding: 14px 18px;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    line-height: 1.45;
+  }
+
+  /* Comparison */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  th, td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th { background: var(--panel2); color: var(--accent); }
+  tr:last-child td { border-bottom: none; }
+  td.bad { color: var(--danger); }
+  td.good { color: var(--accent2); }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 30px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--accent);
+  }
+  .timeline-item {
+    position: relative;
+    padding: 14px 0 14px 24px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -28px;
+    top: 18px;
+    width: 14px;
+    height: 14px;
+    background: var(--accent);
+    border-radius: 50%;
+    border: 3px solid var(--bg);
+  }
+  .timeline-item h4 { margin: 0 0 4px; }
+  .timeline-item p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+  .week-tag { color: var(--accent2); font-weight: 600; }
+
+  /* What if not */
+  .danger-card {
+    background: rgba(255,123,114,0.08);
+    border-left: 4px solid var(--danger);
+    padding: 14px 20px;
+    border-radius: 6px;
+    margin: 12px 0;
+  }
+  .danger-card strong { color: var(--danger); }
+
+  footer {
+    text-align: center;
+    padding: 40px 24px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 600px) {
+    header h1 { font-size: 1.8rem; }
+    .arch-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>URL Shortener — Build Guide</h1>
+  <p>Full roadmap • Flowchart • Skills • Basics</p>
+</header>
+
+<nav class="toc">
+  <a href="#arch">Architecture</a>
+  <a href="#flow">Flow Chart</a>
+  <a href="#index">Learning Index</a>
+  <a href="#skills">Skills</a>
+  <a href="#basics">Basics</a>
+  <a href="#timeline">Timeline</a>
+  <a href="#whatif">What If Not</a>
+</nav>
+
+<main>
+
+<!-- ARCHITECTURE -->
+<section id="arch">
+  <h2>System Architecture (Big Picture)</h2>
+  <p>Four pieces talk. Client hit API. API check cache. Cache miss → API hit DB. DB return → API fill cache → respond.</p>
+  <div class="arch-diagram">
+    <div class="arch-box client">
+      <div class="icon">👤</div>
+      <strong>Client</strong>
+      <p style="font-size:0.8rem; color: var(--muted); margin:6px 0 0;">Browser / curl</p>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box api">
+      <div class="icon">⚙️</div>
+      <strong>API Server</strong>
+      <p style="font-size:0.8rem; color: var(--muted); margin:6px 0 0;">REST routes</p>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box cache">
+      <div class="icon">⚡</div>
+      <strong>Redis</strong>
+      <p style="font-size:0.8rem; color: var(--muted); margin:6px 0 0;">Hot cache</p>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box db">
+      <div class="icon">🗄️</div>
+      <strong>MySQL</strong>
+      <p style="font-size:0.8rem; color: var(--muted); margin:6px 0 0;">Source of truth</p>
+    </div>
+  </div>
+</section>
+
+<!-- FLOWCHART -->
+<section id="flow">
+  <h2>Build Flow Chart (Phase Order)</h2>
+  <div class="flowchart">
+    <div class="flow-node start">
+      <h4>START</h4>
+      <p>Pick stack: language + framework + DB + cache</p>
+    </div>
+    <div class="arrow"></div>
+    <div class="flow-node">
+      <h4>Phase 1 — Foundations</h4>
+      <p>HTTP/REST basics. Dev env. Hello-world route.</p>
+    </div>
+    <div class="arrow"></div>
+    <div class="flow-node">
+      <h4>Phase 2 — Database Layer</h4>
+      <p>MySQL install. Schema. Connect from app. CRUD.</p>
+    </div>
+    <div class="arrow"></div>
+    <div class="flow-node">
+      <h4>Phase 3 — Encoding Logic</h4>
+      <p>Auto-inc ID → Base62 → 6-char code. Unit test.</p>
+    </div>
+    <div class="arrow"></div>
+    <div class="flow-node">
+      <h4>Phase 4 — Core API</h4>
+      <p>POST /shorten. GET /:code redirect. 404 handling.</p>
+    </div>
+    <div class="arrow"></div>
+    <div class="flow-node">
+      <h4>Phase 5 — Indexing</h4>
+      <p>UNIQUE index. EXPLAIN before/after. Seed 10k rows.</p>
+    </div>
+    <div class="arrow"></div>
+    <div class="flow-node">
+      <h4>Phase 6 — Collision Handling</h4>
+      <p>Catch dup constraint. Retry or counter strategy.</p>
+    </div>
+    <div class="arrow"></div>
+    <div class="flow-node">
+      <h4>Phase 7 — Redis Cache</h4>
+      <p>Cache-aside. Set TTL. Measure hit rate.</p>
+    </div>
+    <div class="arrow"></div>
+    <div class="flow-node">
+      <h4>Phase 8 — TTL + Cleanup</h4>
+      <p>expires_at column. Cron sweep. Cache TTL match.</p>
+    </div>
+    <div class="arrow"></div>
+    <div class="flow-node">
+      <h4>Phase 9 — Load Test + Polish</h4>
+      <p>wrk/k6 benchmark. Logging. Docker compose.</p>
+    </div>
+    <div class="arrow"></div>
+    <div class="flow-node end">
+      <h4>DONE</h4>
+      <p>Deploy demo. Document. Show metrics.</p>
+    </div>
+  </div>
+</section>
+
+<!-- LEARNING INDEX -->
+<section id="index">
+  <h2>Learning Index (Start → End)</h2>
+  <p>Each phase = one card. Numbered. Do in order. Each item is one thing learn.</p>
+
+  <div class="index-grid">
+
+    <div class="phase-card">
+      <span class="badge">Index 1</span>
+      <h3>Foundations</h3>
+      <ol>
+        <li>HTTP protocol — methods, status codes</li>
+        <li>REST principles — resources, verbs</li>
+        <li>JSON request/response</li>
+        <li>Pick language (Python recommended for beginner)</li>
+        <li>Pick framework (FastAPI / Express / Gin)</li>
+        <li>Dev tools: curl, Postman</li>
+        <li>Git basics: commit, branch, push</li>
+      </ol>
+    </div>
+
+    <div class="phase-card">
+      <span class="badge">Index 2</span>
+      <h3>Database</h3>
+      <ol>
+        <li>RDBMS concepts: tables, rows, columns</li>
+        <li>SQL CRUD: SELECT/INSERT/UPDATE/DELETE</li>
+        <li>Primary keys + auto-increment</li>
+        <li>UNIQUE constraint</li>
+        <li>Indexes: B-tree, why fast</li>
+        <li>EXPLAIN query plan</li>
+        <li>Connection pooling</li>
+      </ol>
+    </div>
+
+    <div class="phase-card">
+      <span class="badge">Index 3</span>
+      <h3>Encoding</h3>
+      <ol>
+        <li>Number bases (binary, hex, base62)</li>
+        <li>Base62 alphabet: 0-9, a-z, A-Z</li>
+        <li>Convert int ↔ Base62 string</li>
+        <li>Hash funcs: MD5, SHA256</li>
+        <li>Truncate hash to N chars</li>
+        <li>Collision probability math</li>
+      </ol>
+    </div>
+
+    <div class="phase-card">
+      <span class="badge">Index 4</span>
+      <h3>API Design</h3>
+      <ol>
+        <li>Endpoint naming conventions</li>
+        <li>POST vs GET semantics</li>
+        <li>HTTP 301 vs 302 redirect</li>
+        <li>Status codes: 200/201/404/409/500</li>
+        <li>Idempotency concept</li>
+        <li>Input validation</li>
+        <li>Error response format</li>
+      </ol>
+    </div>
+
+    <div class="phase-card">
+      <span class="badge">Index 5</span>
+      <h3>Caching</h3>
+      <ol>
+        <li>Redis install + CLI</li>
+        <li>GET / SET / EXPIRE / DEL</li>
+        <li>Cache-aside pattern</li>
+        <li>Write-through vs write-back</li>
+        <li>TTL expiry</li>
+        <li>LRU eviction</li>
+        <li>Hit rate metric</li>
+      </ol>
+    </div>
+
+    <div class="phase-card">
+      <span class="badge">Index 6</span>
+      <h3>Reliability</h3>
+      <ol>
+        <li>Collision retry loop</li>
+        <li>Transactions (commit/rollback)</li>
+        <li>Race condition basics</li>
+        <li>Cron / scheduled tasks</li>
+        <li>Background workers</li>
+        <li>Graceful shutdown</li>
+      </ol>
+    </div>
+
+    <div class="phase-card">
+      <span class="badge">Index 7</span>
+      <h3>Ops</h3>
+      <ol>
+        <li>Env vars for config</li>
+        <li>Docker basics</li>
+        <li>docker-compose for multi-service</li>
+        <li>Logging (structured logs)</li>
+        <li>Metrics (counters, histograms)</li>
+        <li>Load testing (wrk, k6, ab)</li>
+      </ol>
+    </div>
+
+    <div class="phase-card">
+      <span class="badge">Index 8 (stretch)</span>
+      <h3>Advanced</h3>
+      <ol>
+        <li>Rate limiting (token bucket)</li>
+        <li>Analytics (click counters)</li>
+        <li>Custom vanity aliases</li>
+        <li>Distributed ID gen (Snowflake)</li>
+        <li>CDN / edge caching</li>
+        <li>Sharding strategy</li>
+      </ol>
+    </div>
+
+  </div>
+</section>
+
+<!-- SKILLS -->
+<section id="skills">
+  <h2>Skills &amp; Technologies</h2>
+  <div class="skill-grid">
+
+    <div class="skill-cat">
+      <h4>Language (pick 1)</h4>
+      <ul>
+        <li>Python (easiest)</li>
+        <li>Node.js / TypeScript</li>
+        <li>Go</li>
+        <li>Java / Kotlin</li>
+      </ul>
+    </div>
+
+    <div class="skill-cat">
+      <h4>Web Framework</h4>
+      <ul>
+        <li>FastAPI / Flask (Py)</li>
+        <li>Express / NestJS (Node)</li>
+        <li>Gin / Echo (Go)</li>
+        <li>Spring Boot (Java)</li>
+      </ul>
+    </div>
+
+    <div class="skill-cat">
+      <h4>Database</h4>
+      <ul>
+        <li>MySQL or PostgreSQL</li>
+        <li>SQL query language</li>
+        <li>ORM (SQLAlchemy / Prisma / GORM)</li>
+        <li>Migrations tool</li>
+      </ul>
+    </div>
+
+    <div class="skill-cat">
+      <h4>Cache</h4>
+      <ul>
+        <li>Redis server</li>
+        <li>Redis CLI</li>
+        <li>Client lib (redis-py / ioredis)</li>
+      </ul>
+    </div>
+
+    <div class="skill-cat">
+      <h4>Tooling</h4>
+      <ul>
+        <li>Git + GitHub</li>
+        <li>Docker / Compose</li>
+        <li>curl + Postman</li>
+        <li>VS Code or JetBrains IDE</li>
+      </ul>
+    </div>
+
+    <div class="skill-cat">
+      <h4>Testing</h4>
+      <ul>
+        <li>Unit test framework (pytest / jest)</li>
+        <li>Integration tests</li>
+        <li>Load test: wrk / k6 / ab</li>
+      </ul>
+    </div>
+
+    <div class="skill-cat">
+      <h4>Concepts</h4>
+      <ul>
+        <li>Base62 encoding</li>
+        <li>B-tree index</li>
+        <li>Cache-aside pattern</li>
+        <li>Idempotency</li>
+        <li>Big-O complexity</li>
+      </ul>
+    </div>
+
+    <div class="skill-cat">
+      <h4>Ops</h4>
+      <ul>
+        <li>Env config (.env files)</li>
+        <li>Logging libs</li>
+        <li>Cron / systemd timer</li>
+        <li>Process manager (pm2 / systemd)</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <h3 style="margin-top:32px;">Recommended Beginner Stack</h3>
+  <p>
+    <span class="tag">Python 3.11+</span>
+    <span class="tag">FastAPI</span>
+    <span class="tag">MySQL 8</span>
+    <span class="tag">Redis 7</span>
+    <span class="tag">SQLAlchemy</span>
+    <span class="tag">Docker Compose</span>
+    <span class="tag">pytest</span>
+    <span class="tag">k6 (load test)</span>
+  </p>
+</section>
+
+<!-- BASICS -->
+<section id="basics">
+  <h2>Basics Explained</h2>
+
+  <div class="basic-block">
+    <h3>What is a URL Shortener?</h3>
+    <p>Service takes long URL, return short alias. Map stored. When user visit short link, server look up original, redirect.</p>
+    <pre>Input:  https://example.com/very/long/path?with=many&params=here
+Output: https://sho.rt/aX3k2p</pre>
+  </div>
+
+  <div class="basic-block">
+    <h3>Base62 Encoding</h3>
+    <p>Base62 = 62 chars: 0-9 + a-z + A-Z. Convert big number into short string. 6 chars Base62 = 62⁶ = ~56 billion combinations. Enough for huge service.</p>
+    <pre>ID 12345 → "3D7"
+ID 1000000 → "4c92"
+ID 56800235583 → "zzzzzz" (max 6-char value)</pre>
+    <p style="color: var(--muted); font-size: 0.9rem;">Algorithm: repeatedly divide ID by 62, collect remainders, map to char.</p>
+  </div>
+
+  <div class="basic-block">
+    <h3>Database Index — Why Critical</h3>
+    <p>Without index: DB scan every row (O(n)). 10M rows = slow.</p>
+    <p>With B-tree index: DB jump straight to row (O(log n)). 10M rows ≈ 23 steps. Microseconds.</p>
+    <pre>-- Slow (no index)
+SELECT long_url FROM urls WHERE short_code = 'aX3k2p';
+-- 10M rows scanned → 4+ seconds
+
+-- Fast (with index)
+CREATE UNIQUE INDEX idx_short ON urls(short_code);
+-- Same query → 0.5ms</pre>
+  </div>
+
+  <div class="basic-block">
+    <h3>Cache-Aside Pattern</h3>
+    <p>Read flow: check Redis → if hit, return. If miss, read DB, store in Redis, return.</p>
+    <pre>def get_long_url(code):
+    cached = redis.get(code)
+    if cached:
+        return cached            # HIT: ~1ms
+    row = db.query(code)         # MISS: ~5-10ms
+    if row:
+        redis.setex(code, 3600, row.long_url)
+    return row.long_url if row else None</pre>
+  </div>
+
+  <div class="basic-block">
+    <h3>Collision Handling</h3>
+    <p>Two ways generate code:</p>
+    <ul>
+      <li><strong>Counter (deterministic):</strong> auto-inc ID → Base62. No collisions possible. Predictable URLs (bad for guessing).</li>
+      <li><strong>Random hash:</strong> hash long URL or random bytes. Possible collision → catch UNIQUE error, retry with new code.</li>
+    </ul>
+    <pre>for attempt in range(5):
+    code = random_base62(6)
+    try:
+        db.insert(code, long_url)
+        return code
+    except UniqueViolation:
+        continue
+raise Exception("could not generate unique code")</pre>
+  </div>
+
+  <div class="basic-block">
+    <h3>TTL (Time to Live)</h3>
+    <p>Link expires after N days. Two places set TTL:</p>
+    <ul>
+      <li><strong>DB:</strong> <code>expires_at TIMESTAMP</code> column. Cron sweep delete expired.</li>
+      <li><strong>Redis:</strong> <code>SETEX key ttl_seconds value</code>. Auto-removed.</li>
+    </ul>
+  </div>
+
+  <div class="basic-block">
+    <h3>Idempotency</h3>
+    <p>Same input → same output. POST /shorten with same long URL = should return same short code? Design choice. If yes: store hash(long_url) → check exists before insert.</p>
+  </div>
+
+  <div class="basic-block">
+    <h3>Schema Example</h3>
+    <pre>CREATE TABLE urls (
+  id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+  short_code   VARCHAR(10) NOT NULL,
+  long_url     TEXT NOT NULL,
+  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  expires_at   TIMESTAMP NULL,
+  click_count  BIGINT DEFAULT 0,
+  UNIQUE KEY uk_short (short_code),
+  INDEX idx_expires (expires_at)
+);</pre>
+  </div>
+
+  <div class="basic-block">
+    <h3>API Endpoints</h3>
+    <table>
+      <tr><th>Method</th><th>Path</th><th>Purpose</th><th>Response</th></tr>
+      <tr><td><code>POST</code></td><td>/shorten</td><td>Create short code</td><td>201 + JSON</td></tr>
+      <tr><td><code>GET</code></td><td>/:code</td><td>Redirect to long URL</td><td>301/302</td></tr>
+      <tr><td><code>GET</code></td><td>/api/stats/:code</td><td>Get click stats</td><td>200 + JSON</td></tr>
+      <tr><td><code>DELETE</code></td><td>/api/:code</td><td>Remove link</td><td>204</td></tr>
+    </table>
+  </div>
+
+</section>
+
+<!-- TIMELINE -->
+<section id="timeline">
+  <h2>Suggested Timeline (Solo, Part-Time)</h2>
+  <div class="timeline">
+    <div class="timeline-item">
+      <h4><span class="week-tag">Week 1:</span> Setup + Foundations</h4>
+      <p>Install tools, learn HTTP/REST, build hello-world API.</p>
+    </div>
+    <div class="timeline-item">
+      <h4><span class="week-tag">Week 2:</span> Database + SQL</h4>
+      <p>MySQL schema, CRUD from app, learn indexes + EXPLAIN.</p>
+    </div>
+    <div class="timeline-item">
+      <h4><span class="week-tag">Week 3:</span> Core Shortener Logic</h4>
+      <p>Base62 encoder, POST + GET endpoints, redirect working.</p>
+    </div>
+    <div class="timeline-item">
+      <h4><span class="week-tag">Week 4:</span> Collision + Edge Cases</h4>
+      <p>Handle dup codes, input validation, 404 paths, tests.</p>
+    </div>
+    <div class="timeline-item">
+      <h4><span class="week-tag">Week 5:</span> Redis Cache</h4>
+      <p>Install Redis, cache-aside, measure hit rate.</p>
+    </div>
+    <div class="timeline-item">
+      <h4><span class="week-tag">Week 6:</span> TTL + Cleanup Job</h4>
+      <p>expires_at, cron sweep, Redis TTL match.</p>
+    </div>
+    <div class="timeline-item">
+      <h4><span class="week-tag">Week 7:</span> Load Test + Polish</h4>
+      <p>k6 benchmark, Docker compose, README, deploy demo.</p>
+    </div>
+    <div class="timeline-item">
+      <h4><span class="week-tag">Week 8 (stretch):</span> Advanced</h4>
+      <p>Rate limit, analytics dashboard, custom alias support.</p>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT IF NOT -->
+<section id="whatif">
+  <h2>What Breaks If You Skip a Piece</h2>
+
+  <div class="danger-card">
+    <strong>No DB index</strong> — 10M rows. Each redirect = full table scan. 4+ seconds per click. Users leave.
+  </div>
+  <div class="danger-card">
+    <strong>No cache</strong> — Every redirect hits DB. At 10k req/s the DB cpu maxes out. Service down.
+  </div>
+  <div class="danger-card">
+    <strong>No collision handling</strong> — Two users get same code. One URL overwrites other. Data corruption.
+  </div>
+  <div class="danger-card">
+    <strong>No TTL</strong> — Storage grows forever. Stale links live forever. Backup time explodes.
+  </div>
+  <div class="danger-card">
+    <strong>No input validation</strong> — Attacker submit <code>javascript:</code> URL → stored XSS. Or 1GB URL body → DoS.
+  </div>
+  <div class="danger-card">
+    <strong>No idempotency thought</strong> — Same long URL submitted 1M times → 1M short codes → bloated DB.
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>URL Shortener Build Guide • Built with caveman precision 🪨</p>
+  <p style="font-size:0.8rem;">Single-file HTML. Open in browser. No dependencies.</p>
+</footer>
+
+</body>
+</html>

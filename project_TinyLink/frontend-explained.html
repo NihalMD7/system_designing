@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TinyLink Frontend — Explained Line by Line</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#30363d;
+    --text:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --accent2:#7ee787;
+    --warn:#f0883e; --danger:#ff7b72; --purple:#d2a8ff; --pink:#ff9ec7;
+    --yellow:#ffd866;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.7;
+  }
+  header.hero{
+    background:linear-gradient(135deg,#1f6feb 0%,#8957e5 50%,#db61a2 100%);
+    padding:60px 24px;text-align:center;border-bottom:1px solid var(--border);
+  }
+  header.hero h1{font-size:2.6rem;letter-spacing:0.5px;}
+  header.hero p{max-width:720px;margin:14px auto 0;opacity:0.92;}
+  header.hero .files{margin-top:24px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+  header.hero .file-pill{
+    background:rgba(0,0,0,0.35);padding:6px 14px;border-radius:999px;font-size:0.85rem;
+    border:1px solid rgba(255,255,255,0.2);font-family:monospace;
+  }
+
+  nav.toc{
+    position:sticky;top:0;background:rgba(13,17,23,0.96);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);padding:10px 16px;z-index:100;
+    display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;
+  }
+  nav.toc a{color:var(--accent);text-decoration:none;font-size:0.86rem;padding:4px 10px;border-radius:6px;}
+  nav.toc a:hover{background:var(--panel2);}
+
+  main{max-width:1080px;margin:0 auto;padding:40px 24px;}
+
+  section{margin-bottom:60px;}
+  section > h2{
+    font-size:1.9rem;color:var(--accent);border-bottom:2px solid var(--border);
+    padding-bottom:10px;margin-bottom:6px;
+  }
+  section > .file-tag{
+    display:inline-block;background:var(--panel2);color:var(--accent2);
+    padding:3px 10px;border-radius:6px;font-family:monospace;font-size:0.85rem;
+    border:1px solid var(--border);margin-bottom:18px;
+  }
+
+  .part{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:22px 26px;margin-bottom:24px;
+  }
+  .part h3{
+    color:var(--accent2);font-size:1.2rem;margin-bottom:10px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .part h3 .num{
+    background:var(--accent);color:#000;font-weight:700;width:28px;height:28px;
+    border-radius:6px;display:grid;place-items:center;font-size:0.85rem;
+  }
+  .part h4{
+    color:var(--purple);font-size:0.9rem;text-transform:uppercase;letter-spacing:0.6px;
+    margin:16px 0 6px;font-weight:600;
+  }
+  .part p{margin-bottom:8px;}
+  .part ul{padding-left:22px;margin:6px 0;}
+  .part li{margin:4px 0;}
+
+  code,pre{
+    font-family:"SF Mono",Menlo,Consolas,monospace;background:var(--panel2);
+    border-radius:4px;font-size:0.86rem;
+  }
+  code{padding:2px 6px;color:var(--accent2);}
+  pre{
+    padding:14px 18px;overflow-x:auto;border:1px solid var(--border);
+    line-height:1.55;margin:8px 0;color:var(--text);
+  }
+  pre .kw{color:var(--pink);} pre .str{color:var(--accent2);} pre .com{color:var(--muted);font-style:italic;}
+  pre .num{color:var(--yellow);} pre .tag{color:var(--accent);} pre .attr{color:var(--purple);}
+  pre .sel{color:var(--accent);} pre .prop{color:var(--purple);} pre .val{color:var(--accent2);}
+
+  .callout{
+    background:rgba(88,166,255,0.08);border-left:4px solid var(--accent);
+    padding:12px 16px;border-radius:6px;margin:14px 0;
+  }
+  .callout.warn{background:rgba(240,136,62,0.08);border-color:var(--warn);}
+  .callout.tip {background:rgba(126,231,135,0.08);border-color:var(--accent2);}
+
+  .visual{
+    background:var(--panel2);border:1px dashed var(--border);border-radius:10px;
+    padding:18px;margin:14px 0;text-align:center;
+  }
+  .visual svg{max-width:100%;height:auto;}
+  .caption{font-size:0.82rem;color:var(--muted);margin-top:8px;}
+
+  table{
+    width:100%;border-collapse:collapse;background:var(--panel2);
+    border-radius:8px;overflow:hidden;border:1px solid var(--border);margin:10px 0;
+    font-size:0.9rem;
+  }
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);}
+  th{background:var(--panel);color:var(--accent);}
+  tr:last-child td{border-bottom:none;}
+
+  footer{text-align:center;padding:40px 24px;color:var(--muted);border-top:1px solid var(--border);}
+
+  @media (max-width:600px){
+    header.hero h1{font-size:1.8rem;}
+    main{padding:24px 14px;}
+    .part{padding:18px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>TinyLink Frontend — Explained</h1>
+  <p>Walk through every part of the actual code you just built: the HTML structure, the CSS that styles it, the JavaScript that makes it move, and the Python backend that gives it real storage. Theory + the exact snippet + why it look like that.</p>
+  <div class="files">
+    <span class="file-pill">frontend/index.html</span>
+    <span class="file-pill">frontend/style.css</span>
+    <span class="file-pill">frontend/app.js</span>
+    <span class="file-pill">backend/main.py</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <a href="#overview">Overview</a>
+  <a href="#html">HTML</a>
+  <a href="#css">CSS</a>
+  <a href="#js">JavaScript</a>
+  <a href="#python">Python Backend</a>
+  <a href="#run">Run it</a>
+</nav>
+
+<main>
+
+<!-- ============ OVERVIEW ============ -->
+<section id="overview">
+  <h2>0. Overview — What you built</h2>
+  <p>Three files, one page. Each file own job. Browser load them in order:</p>
+
+  <div class="visual">
+    <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+          <polygon points="0 0, 10 5, 0 10" fill="#58a6ff"/>
+        </marker>
+      </defs>
+      <rect x="30" y="60" width="160" height="80" rx="10" fill="#1c2330" stroke="#58a6ff"/>
+      <text x="110" y="90" text-anchor="middle" fill="#58a6ff" font-size="14" font-weight="bold">index.html</text>
+      <text x="110" y="110" text-anchor="middle" fill="#8b949e" font-size="11">structure</text>
+      <text x="110" y="126" text-anchor="middle" fill="#8b949e" font-size="11">tags + content</text>
+
+      <rect x="270" y="60" width="160" height="80" rx="10" fill="#1c2330" stroke="#d2a8ff"/>
+      <text x="350" y="90" text-anchor="middle" fill="#d2a8ff" font-size="14" font-weight="bold">style.css</text>
+      <text x="350" y="110" text-anchor="middle" fill="#8b949e" font-size="11">look + layout</text>
+      <text x="350" y="126" text-anchor="middle" fill="#8b949e" font-size="11">color, space, font</text>
+
+      <rect x="510" y="60" width="160" height="80" rx="10" fill="#1c2330" stroke="#7ee787"/>
+      <text x="590" y="90" text-anchor="middle" fill="#7ee787" font-size="14" font-weight="bold">app.js</text>
+      <text x="590" y="110" text-anchor="middle" fill="#8b949e" font-size="11">behavior</text>
+      <text x="590" y="126" text-anchor="middle" fill="#8b949e" font-size="11">click, fetch, render</text>
+
+      <line x1="190" y1="100" x2="269" y2="100" stroke="#58a6ff" stroke-width="2" marker-end="url(#arr)"/>
+      <line x1="430" y1="100" x2="509" y2="100" stroke="#58a6ff" stroke-width="2" marker-end="url(#arr)"/>
+    </svg>
+    <div class="caption">HTML is skeleton. CSS dresses it. JS gives it life.</div>
+  </div>
+
+  <p><b>Features built:</b></p>
+  <ul style="margin-left:18px;">
+    <li>Sticky top nav</li>
+    <li>Hero section with URL input form</li>
+    <li>Result card with copy-to-clipboard button</li>
+    <li>History list (saved in <code>localStorage</code>) with copy + delete</li>
+    <li>"How it works" 3-card grid</li>
+    <li>Responsive layout (mobile friendly)</li>
+  </ul>
+</section>
+
+<!-- ============================================ -->
+<!-- ================== HTML ==================== -->
+<!-- ============================================ -->
+<section id="html">
+  <h2>1. HTML — Structure</h2>
+  <span class="file-tag">frontend/index.html</span>
+
+  <!-- 1.1 doctype -->
+  <div class="part">
+    <h3><span class="num">1</span> Doctype + root</h3>
+    <h4>Theory</h4>
+    <p>First line tell browser "this is HTML5." Without it, browser go quirks mode and rendering get weird. The <code>&lt;html lang="en"&gt;</code> help screen readers + SEO.</p>
+    <h4>Code</h4>
+<pre><span class="tag">&lt;!DOCTYPE html&gt;</span>
+<span class="tag">&lt;html</span> <span class="attr">lang</span>=<span class="str">"en"</span><span class="tag">&gt;</span></pre>
+  </div>
+
+  <!-- 1.2 head -->
+  <div class="part">
+    <h3><span class="num">2</span> &lt;head&gt; — meta + stylesheet</h3>
+    <h4>Theory</h4>
+    <p><code>&lt;head&gt;</code> hold info <i>about</i> the page, not visible content. <code>charset</code> say "use UTF-8" so emoji + non-English text render correctly. The <code>viewport</code> meta is the one trick that make site responsive on phone. The <code>&lt;link&gt;</code> pull external CSS file.</p>
+    <h4>Code</h4>
+<pre><span class="tag">&lt;head&gt;</span>
+  <span class="tag">&lt;meta</span> <span class="attr">charset</span>=<span class="str">"UTF-8"</span> <span class="tag">/&gt;</span>
+  <span class="tag">&lt;meta</span> <span class="attr">name</span>=<span class="str">"viewport"</span> <span class="attr">content</span>=<span class="str">"width=device-width, initial-scale=1.0"</span> <span class="tag">/&gt;</span>
+  <span class="tag">&lt;title&gt;</span>TinyLink — URL Shortener<span class="tag">&lt;/title&gt;</span>
+  <span class="tag">&lt;link</span> <span class="attr">rel</span>=<span class="str">"stylesheet"</span> <span class="attr">href</span>=<span class="str">"style.css"</span> <span class="tag">/&gt;</span>
+<span class="tag">&lt;/head&gt;</span></pre>
+    <div class="callout tip"><b>Why viewport line?</b> Without it, phones render at 980 px wide then shrink → tiny text. With it, layout adapt to actual screen.</div>
+  </div>
+
+  <!-- 1.3 topbar -->
+  <div class="part">
+    <h3><span class="num">3</span> Top navigation</h3>
+    <h4>Theory</h4>
+    <p>Semantic tags = use the <i>right</i> tag for the job. <code>&lt;header&gt;</code> for top bar, <code>&lt;nav&gt;</code> for link group. Helps screen readers + SEO.</p>
+    <h4>Code</h4>
+<pre><span class="tag">&lt;header</span> <span class="attr">class</span>=<span class="str">"topbar"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"brand"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;span</span> <span class="attr">class</span>=<span class="str">"logo"</span><span class="tag">&gt;</span>🔗<span class="tag">&lt;/span&gt;</span>
+    <span class="tag">&lt;span</span> <span class="attr">class</span>=<span class="str">"brand-name"</span><span class="tag">&gt;</span>TinyLink<span class="tag">&lt;/span&gt;</span>
+  <span class="tag">&lt;/div&gt;</span>
+  <span class="tag">&lt;nav</span> <span class="attr">class</span>=<span class="str">"nav-links"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;a</span> <span class="attr">href</span>=<span class="str">"#shorten"</span><span class="tag">&gt;</span>Shorten<span class="tag">&lt;/a&gt;</span>
+    <span class="tag">&lt;a</span> <span class="attr">href</span>=<span class="str">"#history"</span><span class="tag">&gt;</span>History<span class="tag">&lt;/a&gt;</span>
+    <span class="tag">&lt;a</span> <span class="attr">href</span>=<span class="str">"#about"</span><span class="tag">&gt;</span>About<span class="tag">&lt;/a&gt;</span>
+  <span class="tag">&lt;/nav&gt;</span>
+<span class="tag">&lt;/header&gt;</span></pre>
+    <p>The <code>href="#shorten"</code> jump to element with <code>id="shorten"</code>. No JS needed.</p>
+  </div>
+
+  <!-- 1.4 form -->
+  <div class="part">
+    <h3><span class="num">4</span> The form — heart of the app</h3>
+    <h4>Theory</h4>
+    <p>A <code>&lt;form&gt;</code> group inputs and gives you a single <i>submit</i> event. We use <code>type="url"</code> so browser do basic validation + show URL keyboard on phones. <code>novalidate</code> tells browser "let JS handle the error message" (cleaner UI).</p>
+    <h4>Code</h4>
+<pre><span class="tag">&lt;form</span> <span class="attr">id</span>=<span class="str">"shorten-form"</span> <span class="attr">class</span>=<span class="str">"shorten-form"</span> <span class="attr">novalidate</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;input</span>
+    <span class="attr">type</span>=<span class="str">"url"</span>
+    <span class="attr">id</span>=<span class="str">"long-url"</span>
+    <span class="attr">name</span>=<span class="str">"long"</span>
+    <span class="attr">placeholder</span>=<span class="str">"https://example.com/..."</span>
+    <span class="attr">required</span>
+    <span class="attr">autocomplete</span>=<span class="str">"off"</span> <span class="tag">/&gt;</span>
+  <span class="tag">&lt;button</span> <span class="attr">type</span>=<span class="str">"submit"</span><span class="tag">&gt;</span>Shorten<span class="tag">&lt;/button&gt;</span>
+<span class="tag">&lt;/form&gt;</span></pre>
+
+    <h4>Key attributes table</h4>
+    <table>
+      <tr><th>Attribute</th><th>Why it matter</th></tr>
+      <tr><td><code>id</code></td><td>JS use it to find element: <code>document.querySelector('#shorten-form')</code></td></tr>
+      <tr><td><code>class</code></td><td>CSS use it to style</td></tr>
+      <tr><td><code>type="url"</code></td><td>Browser validates URL format</td></tr>
+      <tr><td><code>required</code></td><td>Can't submit empty</td></tr>
+      <tr><td><code>novalidate</code></td><td>We do validation in JS for nicer error UI</td></tr>
+    </table>
+  </div>
+
+  <!-- 1.5 result card -->
+  <div class="part">
+    <h3><span class="num">5</span> Result card — hidden by default</h3>
+    <h4>Theory</h4>
+    <p>The <code>hidden</code> attribute is HTML5 standard way to hide element. JS will flip it (<code>el.hidden = false</code>) when result arrives. Better than <code>display:none</code> in CSS because it is semantic — assistive tech know element is hidden.</p>
+    <h4>Code</h4>
+<pre><span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"result-card"</span> <span class="attr">id</span>=<span class="str">"result-card"</span> <span class="attr">hidden</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"result-row"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;span</span> <span class="attr">class</span>=<span class="str">"result-label"</span><span class="tag">&gt;</span>Short URL<span class="tag">&lt;/span&gt;</span>
+    <span class="tag">&lt;a</span> <span class="attr">id</span>=<span class="str">"result-link"</span> <span class="attr">href</span>=<span class="str">"#"</span> <span class="attr">target</span>=<span class="str">"_blank"</span> <span class="attr">rel</span>=<span class="str">"noopener"</span><span class="tag">&gt;&lt;/a&gt;</span>
+  <span class="tag">&lt;/div&gt;</span>
+  <span class="tag">&lt;button</span> <span class="attr">class</span>=<span class="str">"copy-btn"</span> <span class="attr">id</span>=<span class="str">"copy-btn"</span><span class="tag">&gt;</span>Copy<span class="tag">&lt;/button&gt;</span>
+<span class="tag">&lt;/div&gt;</span></pre>
+    <div class="callout warn"><code>rel="noopener"</code> on <code>target="_blank"</code> link = security best practice. Without it, new tab can hijack your tab via <code>window.opener</code>.</div>
+  </div>
+
+  <!-- 1.6 script -->
+  <div class="part">
+    <h3><span class="num">6</span> Script at the bottom</h3>
+    <h4>Theory</h4>
+    <p>Putting <code>&lt;script&gt;</code> right before <code>&lt;/body&gt;</code> means the DOM exists by the time JS runs. So <code>document.querySelector('#form')</code> finds the element. If you put script in <code>&lt;head&gt;</code> without <code>defer</code>, your selectors return <code>null</code> and you debug for an hour.</p>
+    <h4>Code</h4>
+<pre>  ...
+  <span class="tag">&lt;script</span> <span class="attr">src</span>=<span class="str">"app.js"</span><span class="tag">&gt;&lt;/script&gt;</span>
+<span class="tag">&lt;/body&gt;</span></pre>
+    <div class="callout tip">Alternative: <code>&lt;script src="app.js" defer&gt;&lt;/script&gt;</code> in head — also waits for DOM, plus loads in parallel. Either works.</div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- ================== CSS ===================== -->
+<!-- ============================================ -->
+<section id="css">
+  <h2>2. CSS — Look + Layout</h2>
+  <span class="file-tag">frontend/style.css</span>
+
+  <!-- 2.1 variables -->
+  <div class="part">
+    <h3><span class="num">1</span> CSS variables (design tokens)</h3>
+    <h4>Theory</h4>
+    <p>Variables on <code>:root</code> = global. Anywhere in CSS use <code>var(--name)</code>. Big win: change color once, whole UI updates. Also makes dark/light theming trivial later.</p>
+    <h4>Code</h4>
+<pre><span class="sel">:root</span> {
+  <span class="prop">--bg</span>:        <span class="val">#0d1117</span>;
+  <span class="prop">--accent</span>:    <span class="val">#58a6ff</span>;
+  <span class="prop">--radius</span>:    <span class="val">10px</span>;
+  <span class="prop">--shadow</span>:    <span class="val">0 6px 20px rgba(0, 0, 0, 0.35)</span>;
+}
+
+<span class="sel">.shorten-form button</span> {
+  <span class="prop">background</span>: <span class="val">var(--accent)</span>;     <span class="com">/* uses the token */</span>
+  <span class="prop">border-radius</span>: <span class="val">8px</span>;
+}</pre>
+  </div>
+
+  <!-- 2.2 reset -->
+  <div class="part">
+    <h3><span class="num">2</span> Universal reset</h3>
+    <h4>Theory</h4>
+    <p>Browsers ship with default margins on <code>body</code>, <code>h1</code>, etc. Different per browser. Reset zeros it so you control spacing. <code>box-sizing: border-box</code> = padding + border counted <i>inside</i> the width (intuitive). Without it, <code>width:100%</code> + padding overflow.</p>
+    <h4>Code</h4>
+<pre><span class="sel">*</span> { <span class="prop">box-sizing</span>: <span class="val">border-box</span>; <span class="prop">margin</span>: <span class="val">0</span>; <span class="prop">padding</span>: <span class="val">0</span>; }</pre>
+
+    <div class="visual">
+      <svg viewBox="0 0 600 160" xmlns="http://www.w3.org/2000/svg">
+        <text x="20" y="30" fill="#ff7b72" font-size="13">content-box (default)</text>
+        <rect x="20" y="50" width="200" height="60" fill="#3b1f1f" stroke="#ff7b72"/>
+        <rect x="40" y="60" width="160" height="40" fill="#1f6feb"/>
+        <text x="120" y="86" text-anchor="middle" fill="#fff" font-size="11">content</text>
+        <text x="20" y="135" fill="#8b949e" font-size="11">width:200 + padding → total 240px (overflow!)</text>
+
+        <text x="320" y="30" fill="#7ee787" font-size="13">border-box</text>
+        <rect x="320" y="50" width="200" height="60" fill="#1f3b1f" stroke="#7ee787"/>
+        <rect x="340" y="60" width="160" height="40" fill="#1f6feb"/>
+        <text x="420" y="86" text-anchor="middle" fill="#fff" font-size="11">content</text>
+        <text x="320" y="135" fill="#8b949e" font-size="11">width:200 includes padding → 200px total ✓</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- 2.3 flex -->
+  <div class="part">
+    <h3><span class="num">3</span> Flexbox for the form</h3>
+    <h4>Theory</h4>
+    <p>Flexbox = 1D layout (row or column). <code>display:flex</code> on parent → children align side by side. <code>flex:1</code> on input means "take all leftover space." Button keeps natural width.</p>
+    <h4>Code</h4>
+<pre><span class="sel">.shorten-form</span> {
+  <span class="prop">display</span>: <span class="val">flex</span>;
+  <span class="prop">gap</span>: <span class="val">10px</span>;          <span class="com">/* space between children */</span>
+}
+<span class="sel">.shorten-form input</span>  { <span class="prop">flex</span>: <span class="val">1</span>; }    <span class="com">/* grow to fill */</span>
+<span class="sel">.shorten-form button</span> { <span class="prop">padding</span>: <span class="val">12px 24px</span>; }</pre>
+
+    <div class="visual">
+      <svg viewBox="0 0 600 80" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="430" height="40" rx="6" fill="#1c2330" stroke="#58a6ff"/>
+        <text x="235" y="46" text-anchor="middle" fill="#8b949e" font-size="12">input (flex:1, grows)</text>
+        <rect x="465" y="20" width="115" height="40" rx="6" fill="#58a6ff"/>
+        <text x="522" y="46" text-anchor="middle" fill="#000" font-size="12">Shorten</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- 2.4 grid -->
+  <div class="part">
+    <h3><span class="num">4</span> Grid for the "How it works" cards</h3>
+    <h4>Theory</h4>
+    <p>Grid = 2D layout. <code>auto-fit</code> + <code>minmax(220px, 1fr)</code> = "as many columns as fit, each at least 220 px wide, expand evenly." Auto-responsive: 3 cards on desktop, 2 on tablet, 1 on phone — no media query needed.</p>
+    <h4>Code</h4>
+<pre><span class="sel">.cards</span> {
+  <span class="prop">display</span>: <span class="val">grid</span>;
+  <span class="prop">grid-template-columns</span>: <span class="val">repeat(auto-fit, minmax(220px, 1fr))</span>;
+  <span class="prop">gap</span>: <span class="val">16px</span>;
+}</pre>
+
+    <div class="visual">
+      <svg viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+        <text x="300" y="20" text-anchor="middle" fill="#8b949e" font-size="12">wide screen → 3 cols</text>
+        <rect x="20" y="30" width="180" height="50" rx="6" fill="#1c2330" stroke="#58a6ff"/>
+        <rect x="210" y="30" width="180" height="50" rx="6" fill="#1c2330" stroke="#58a6ff"/>
+        <rect x="400" y="30" width="180" height="50" rx="6" fill="#1c2330" stroke="#58a6ff"/>
+
+        <text x="300" y="110" text-anchor="middle" fill="#8b949e" font-size="12">narrow screen → 2 cols</text>
+        <rect x="100" y="120" width="180" height="50" rx="6" fill="#1c2330" stroke="#58a6ff"/>
+        <rect x="320" y="120" width="180" height="50" rx="6" fill="#1c2330" stroke="#58a6ff"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- 2.5 hero gradient -->
+  <div class="part">
+    <h3><span class="num">5</span> Gradient text trick</h3>
+    <h4>Theory</h4>
+    <p>To paint text with a gradient, set <code>background</code> to gradient then make text transparent and "clip" the background to text shape. The <code>-webkit-</code> prefix needed for Safari + Chrome.</p>
+    <h4>Code</h4>
+<pre><span class="sel">.hero .accent</span> {
+  <span class="prop">background</span>: <span class="val">linear-gradient(135deg, #58a6ff, #d2a8ff)</span>;
+  <span class="prop">-webkit-background-clip</span>: <span class="val">text</span>;
+  <span class="prop">background-clip</span>: <span class="val">text</span>;
+  <span class="prop">color</span>: <span class="val">transparent</span>;
+}</pre>
+    <p>HTML side: <code>&lt;span class="accent"&gt;tiny&lt;/span&gt;</code>.</p>
+  </div>
+
+  <!-- 2.6 animation -->
+  <div class="part">
+    <h3><span class="num">6</span> Keyframe animation on result card</h3>
+    <h4>Theory</h4>
+    <p><code>@keyframes</code> define stages. <code>animation</code> property apply them. Subtle motion (~250 ms) make UI feel alive without being distracting.</p>
+    <h4>Code</h4>
+<pre><span class="sel">.result-card</span> {
+  <span class="prop">animation</span>: <span class="val">pop-in 0.25s ease-out</span>;
+}
+
+<span class="kw">@keyframes</span> pop-in {
+  <span class="sel">from</span> { <span class="prop">opacity</span>: <span class="val">0</span>; <span class="prop">transform</span>: <span class="val">translateY(6px)</span>; }
+  <span class="sel">to</span>   { <span class="prop">opacity</span>: <span class="val">1</span>; <span class="prop">transform</span>: <span class="val">translateY(0)</span>; }
+}</pre>
+  </div>
+
+  <!-- 2.7 media query -->
+  <div class="part">
+    <h3><span class="num">7</span> Responsive — media query</h3>
+    <h4>Theory</h4>
+    <p>Media query = "apply these rules only when condition true." Common: viewport width. We collapse the form to vertical on phones.</p>
+    <h4>Code</h4>
+<pre><span class="kw">@media</span> (max-width: 600px) {
+  <span class="sel">.hero h1</span>      { <span class="prop">font-size</span>: <span class="val">2rem</span>; }
+  <span class="sel">.shorten-form</span> { <span class="prop">flex-direction</span>: <span class="val">column</span>; }
+  <span class="sel">.shorten-form button</span> { <span class="prop">width</span>: <span class="val">100%</span>; }
+}</pre>
+    <div class="callout tip">Mobile-first alternative: design small first, then use <code>min-width</code> queries to add desktop styles. Either works — be consistent.</div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- ================== JS ====================== -->
+<!-- ============================================ -->
+<section id="js">
+  <h2>3. JavaScript — Behavior</h2>
+  <span class="file-tag">frontend/app.js</span>
+
+  <!-- 3.1 query DOM -->
+  <div class="part">
+    <h3><span class="num">1</span> Grab DOM references once</h3>
+    <h4>Theory</h4>
+    <p><code>document.querySelector(selector)</code> = same syntax as CSS selector. Returns first match. Cache the reference in <code>const</code> so you don't re-query every time. Faster, cleaner.</p>
+    <h4>Code</h4>
+<pre><span class="kw">const</span> form       = document.querySelector(<span class="str">'#shorten-form'</span>);
+<span class="kw">const</span> input      = document.querySelector(<span class="str">'#long-url'</span>);
+<span class="kw">const</span> submitBtn  = document.querySelector(<span class="str">'#submit-btn'</span>);
+<span class="kw">const</span> resultCard = document.querySelector(<span class="str">'#result-card'</span>);</pre>
+    <table>
+      <tr><th>Method</th><th>Returns</th></tr>
+      <tr><td><code>querySelector('#x')</code></td><td>first match (Element or null)</td></tr>
+      <tr><td><code>querySelectorAll('.x')</code></td><td>NodeList of all matches</td></tr>
+      <tr><td><code>getElementById('x')</code></td><td>old API, slightly faster, only id</td></tr>
+    </table>
+  </div>
+
+  <!-- 3.2 base62 -->
+  <div class="part">
+    <h3><span class="num">2</span> Base62 — moved to the Python backend</h3>
+    <h4>Theory</h4>
+    <p>Original demo did Base62 in the browser, but a real shortener must encode <i>the database id</i>, and only the server knows that. So encoding moved to Python (see <a href="#python">Python Backend</a> section). The algorithm is identical: divide-mod loop, pick char at index <code>n % 62</code>, shrink <code>n = floor(n / 62)</code>, repeat until <code>n == 0</code>, reverse.</p>
+    <h4>Old JS version (kept here for reference)</h4>
+<pre><span class="kw">const</span> ALPHA = <span class="str">'0123456789abcdefghijklmnopqrstuvwxyz'</span>
+            + <span class="str">'ABCDEFGHIJKLMNOPQRSTUVWXYZ'</span>;
+
+<span class="kw">function</span> base62(n) {
+  <span class="kw">if</span> (n === <span class="num">0</span>) <span class="kw">return</span> <span class="str">'0'</span>;
+  <span class="kw">let</span> out = <span class="str">''</span>;
+  <span class="kw">while</span> (n &gt; <span class="num">0</span>) {
+    out = ALPHA[n % <span class="num">62</span>] + out;
+    n = Math.floor(n / <span class="num">62</span>);
+  }
+  <span class="kw">return</span> out;
+}</pre>
+    <div class="callout tip">Frontend <code>app.js</code> no longer contains <code>base62()</code> — the server returns the ready-made <code>code</code> string in its JSON response.</div>
+  </div>
+
+  <!-- 3.3 validation -->
+  <div class="part">
+    <h3><span class="num">3</span> URL validation with built-in <code>URL</code> class</h3>
+    <h4>Theory</h4>
+    <p>Don't write regex for URLs. Browser has the <code>URL</code> constructor — it throws if string isn't a valid URL. We catch it and also require http(s) so user can't paste <code>javascript:</code> URLs.</p>
+    <h4>Code</h4>
+<pre><span class="kw">function</span> isValidUrl(str) {
+  <span class="kw">try</span> {
+    <span class="kw">const</span> u = <span class="kw">new</span> URL(str);
+    <span class="kw">return</span> u.protocol === <span class="str">'http:'</span> || u.protocol === <span class="str">'https:'</span>;
+  } <span class="kw">catch</span> {
+    <span class="kw">return false</span>;
+  }
+}</pre>
+  </div>
+
+  <!-- 3.4 fetch -->
+  <div class="part">
+    <h3><span class="num">4</span> Calling the Python backend with <code>fetch</code></h3>
+    <h4>Theory</h4>
+    <p><code>fetch()</code> is the browser's built-in HTTP client. It returns a <code>Promise&lt;Response&gt;</code>, so we <code>await</code> it. The body must be a JSON <i>string</i> — that's why <code>JSON.stringify(...)</code>. The matching FastAPI route accepts a Pydantic model with a <code>long</code> field (see <a href="#python">Python Backend</a>).</p>
+    <h4>Code (now in <code>app.js</code>)</h4>
+<pre><span class="kw">async function</span> shorten(longUrl) {
+  <span class="kw">const</span> res = <span class="kw">await</span> fetch(<span class="str">'/api/shorten'</span>, {
+    method:  <span class="str">'POST'</span>,
+    headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+    body:    JSON.stringify({ long: longUrl })
+  });
+  <span class="kw">if</span> (!res.ok) {
+    <span class="kw">const</span> msg = <span class="kw">await</span> res.text().catch(() =&gt; <span class="str">''</span>);
+    <span class="kw">throw new</span> Error(<span class="str">`API ${res.status}: ${msg || 'request failed'}`</span>);
+  }
+  <span class="kw">return</span> res.json();
+}</pre>
+    <h4>Expected response shape</h4>
+<pre>{
+  <span class="str">"code"</span>:  <span class="str">"2k"</span>,
+  <span class="str">"short"</span>: <span class="str">"http://localhost:8000/2k"</span>,
+  <span class="str">"long"</span>:  <span class="str">"https://example.com/some/very/long/path"</span>
+}</pre>
+    <div class="callout tip">Same-origin = no CORS headache. If the Python app serves <code>frontend/</code> as static files, the browser sees one origin and <code>fetch('/api/shorten')</code> just works.</div>
+  </div>
+
+  <!-- 3.5 storage -->
+  <div class="part">
+    <h3><span class="num">5</span> localStorage — persist history</h3>
+    <h4>Theory</h4>
+    <p><code>localStorage</code> = browser key-value store, persist across reloads. Only stores strings → use <code>JSON.stringify</code> to write, <code>JSON.parse</code> to read. Wrap in try/catch in case it's disabled (private mode).</p>
+    <h4>Code</h4>
+<pre><span class="kw">const</span> STORAGE_KEY = <span class="str">'tinylink.history'</span>;
+
+<span class="kw">function</span> loadHistory() {
+  <span class="kw">try</span> {
+    <span class="kw">return</span> JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } <span class="kw">catch</span> { <span class="kw">return</span> []; }
+}
+
+<span class="kw">function</span> saveHistory(list) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+
+<span class="kw">function</span> addToHistory(entry) {
+  <span class="kw">const</span> list = loadHistory();
+  list.unshift({ ...entry, at: Date.now() });
+  saveHistory(list.slice(<span class="num">0</span>, <span class="num">20</span>));   <span class="com">// keep last 20</span>
+  renderHistory();
+}</pre>
+    <div class="callout warn">localStorage cap is ~5 MB per origin. Don't store huge blobs there.</div>
+  </div>
+
+  <!-- 3.6 render -->
+  <div class="part">
+    <h3><span class="num">6</span> Render history — template literals</h3>
+    <h4>Theory</h4>
+    <p>Build HTML string with backticks (template literal), then assign to <code>.innerHTML</code>. Quick + simple. Real frameworks (React, Vue) use virtual DOM — but for ~20 items this is fine.</p>
+    <h4>Code</h4>
+<pre><span class="kw">function</span> renderHistory() {
+  <span class="kw">const</span> list = loadHistory();
+  historyList.innerHTML = <span class="str">''</span>;
+
+  <span class="kw">if</span> (list.length === <span class="num">0</span>) { emptyState.hidden = <span class="kw">false</span>; <span class="kw">return</span>; }
+  emptyState.hidden = <span class="kw">true</span>;
+
+  <span class="kw">for</span> (<span class="kw">const</span> entry <span class="kw">of</span> list) {
+    <span class="kw">const</span> li = document.createElement(<span class="str">'li'</span>);
+    li.className = <span class="str">'history-item'</span>;
+    li.innerHTML = <span class="str">`
+      &lt;div class="history-meta"&gt;
+        &lt;a class="history-short" href="${entry.short}"&gt;${entry.short}&lt;/a&gt;
+        &lt;span class="history-long"&gt;${entry.long}&lt;/span&gt;
+      &lt;/div&gt;
+      &lt;div class="history-actions"&gt;
+        &lt;button data-action="copy" data-short="${entry.short}"&gt;📋&lt;/button&gt;
+        &lt;button data-action="del"  data-code="${entry.code}"&gt;✕&lt;/button&gt;
+      &lt;/div&gt;
+    `</span>;
+    historyList.appendChild(li);
+  }
+}</pre>
+    <div class="callout warn">If <code>entry.long</code> contained HTML, <code>innerHTML</code> would execute it (XSS). For trusted/own data fine. For user content from a public API, sanitize first or use <code>textContent</code>.</div>
+  </div>
+
+  <!-- 3.7 events -->
+  <div class="part">
+    <h3><span class="num">7</span> Event delegation for history buttons</h3>
+    <h4>Theory</h4>
+    <p>Instead of attaching a listener to every button (20+ listeners as list grow), attach <i>one</i> to the parent <code>&lt;ul&gt;</code>. Inside, check what was clicked via <code>e.target</code>. Lighter, also works for items added later.</p>
+    <h4>Code</h4>
+<pre>historyList.addEventListener(<span class="str">'click'</span>, (e) =&gt; {
+  <span class="kw">const</span> btn = e.target.closest(<span class="str">'button[data-action]'</span>);
+  <span class="kw">if</span> (!btn) <span class="kw">return</span>;
+
+  <span class="kw">if</span> (btn.dataset.action === <span class="str">'copy'</span>) {
+    copyText(btn.dataset.short, btn);
+  } <span class="kw">else if</span> (btn.dataset.action === <span class="str">'del'</span>) {
+    deleteFromHistory(btn.dataset.code);
+  }
+});</pre>
+    <p><code>data-*</code> attributes are HTML5 standard way to attach custom data. Read in JS via <code>btn.dataset.action</code> etc.</p>
+  </div>
+
+  <!-- 3.8 submit -->
+  <div class="part">
+    <h3><span class="num">8</span> The submit handler — full flow</h3>
+    <h4>Theory</h4>
+    <p>This is where everything connect. Validate → disable button → call backend → show result → save history → re-enable button. <code>try / finally</code> guarantee button get re-enabled even if request fail.</p>
+    <h4>Code</h4>
+<pre>form.addEventListener(<span class="str">'submit'</span>, <span class="kw">async</span> (e) =&gt; {
+  e.preventDefault();                            <span class="com">// stop page reload</span>
+  clearError();
+  resultCard.hidden = <span class="kw">true</span>;
+
+  <span class="kw">const</span> longUrl = input.value.trim();
+  <span class="kw">if</span> (!isValidUrl(longUrl)) {
+    showError(<span class="str">'Please enter a valid http(s) URL.'</span>);
+    <span class="kw">return</span>;
+  }
+
+  submitBtn.disabled = <span class="kw">true</span>;
+  submitBtn.textContent = <span class="str">'Shortening…'</span>;
+
+  <span class="kw">try</span> {
+    <span class="kw">const</span> data = <span class="kw">await</span> mockShorten(longUrl);
+    resultLink.href = data.short;
+    resultLink.textContent = data.short;
+    resultCard.hidden = <span class="kw">false</span>;
+    addToHistory(data);
+    input.value = <span class="str">''</span>;
+  } <span class="kw">catch</span> (err) {
+    showError(<span class="str">'Something went wrong. Try again.'</span>);
+  } <span class="kw">finally</span> {
+    submitBtn.disabled = <span class="kw">false</span>;
+    submitBtn.textContent = <span class="str">'Shorten'</span>;
+  }
+});</pre>
+
+    <div class="visual">
+      <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10"  y="80" width="100" height="50" rx="8" fill="#1c2330" stroke="#58a6ff"/>
+        <text x="60"  y="110" text-anchor="middle" fill="#e6edf3" font-size="12">submit</text>
+
+        <rect x="130" y="80" width="100" height="50" rx="8" fill="#1c2330" stroke="#d2a8ff"/>
+        <text x="180" y="110" text-anchor="middle" fill="#d2a8ff" font-size="12">validate</text>
+
+        <rect x="250" y="80" width="100" height="50" rx="8" fill="#1c2330" stroke="#d2a8ff"/>
+        <text x="300" y="110" text-anchor="middle" fill="#d2a8ff" font-size="12">disable btn</text>
+
+        <rect x="370" y="80" width="100" height="50" rx="8" fill="#1c2330" stroke="#7ee787"/>
+        <text x="420" y="110" text-anchor="middle" fill="#7ee787" font-size="12">await fetch</text>
+
+        <rect x="490" y="80" width="100" height="50" rx="8" fill="#1c2330" stroke="#d2a8ff"/>
+        <text x="540" y="110" text-anchor="middle" fill="#d2a8ff" font-size="12">show card</text>
+
+        <rect x="610" y="80" width="130" height="50" rx="8" fill="#1c2330" stroke="#ffd866"/>
+        <text x="675" y="110" text-anchor="middle" fill="#ffd866" font-size="12">save history</text>
+
+        <line x1="110" y1="105" x2="129" y2="105" stroke="#58a6ff" stroke-width="2" marker-end="url(#arr)"/>
+        <line x1="230" y1="105" x2="249" y2="105" stroke="#58a6ff" stroke-width="2" marker-end="url(#arr)"/>
+        <line x1="350" y1="105" x2="369" y2="105" stroke="#58a6ff" stroke-width="2" marker-end="url(#arr)"/>
+        <line x1="470" y1="105" x2="489" y2="105" stroke="#58a6ff" stroke-width="2" marker-end="url(#arr)"/>
+        <line x1="590" y1="105" x2="609" y2="105" stroke="#58a6ff" stroke-width="2" marker-end="url(#arr)"/>
+      </svg>
+      <div class="caption">Linear flow with await pause at fetch step.</div>
+    </div>
+  </div>
+
+  <!-- 3.9 clipboard -->
+  <div class="part">
+    <h3><span class="num">9</span> Clipboard API + feedback animation</h3>
+    <h4>Theory</h4>
+    <p>Modern browsers expose <code>navigator.clipboard.writeText()</code>. Async (returns promise). Give visual feedback because clipboard write is invisible otherwise.</p>
+    <h4>Code</h4>
+<pre><span class="kw">async function</span> copyText(text, btn) {
+  <span class="kw">try</span> {
+    <span class="kw">await</span> navigator.clipboard.writeText(text);
+    <span class="kw">if</span> (btn) {
+      <span class="kw">const</span> original = btn.textContent;
+      btn.textContent = <span class="str">'Copied!'</span>;
+      btn.classList.add(<span class="str">'copied'</span>);
+      setTimeout(() =&gt; {
+        btn.textContent = original;
+        btn.classList.remove(<span class="str">'copied'</span>);
+      }, <span class="num">1200</span>);
+    }
+  } <span class="kw">catch</span> (err) { console.error(<span class="str">'Clipboard failed'</span>, err); }
+}</pre>
+    <div class="callout warn">Clipboard API only works on HTTPS or <code>localhost</code>. Open the file with <code>file://</code> and it fails silently.</div>
+  </div>
+
+</section>
+
+<!-- ============================================ -->
+<!-- ============ PYTHON BACKEND ================ -->
+<!-- ============================================ -->
+<section id="python">
+  <h2>4. Python Backend — FastAPI + SQLite</h2>
+  <span class="file-tag">backend/main.py</span>
+
+  <!-- 4.0 why -->
+  <div class="part">
+    <h3><span class="num">0</span> Why these picks?</h3>
+    <table>
+      <tr><th>Piece</th><th>Choice</th><th>Why for a beginner</th></tr>
+      <tr><td>Web framework</td><td><b>FastAPI</b></td><td>Type-hinted request bodies, auto-generated <code>/docs</code> page, async by default, very little boilerplate. Flask is simpler still — pick it if you want pure minimalism.</td></tr>
+      <tr><td>Database</td><td><b>SQLite</b></td><td>Single file, zero install, built into Python's stdlib. Swap for Postgres later by changing one URL.</td></tr>
+      <tr><td>ASGI server</td><td><b>Uvicorn</b></td><td>The thing that actually runs your FastAPI app and serves HTTP. Hot reload via <code>--reload</code>.</td></tr>
+      <tr><td>Static files</td><td><b>StaticFiles</b></td><td>Lets the same FastAPI process serve <code>frontend/</code> — no CORS, no second server.</td></tr>
+    </table>
+    <h4>Install</h4>
+<pre><span class="com"># in project root</span>
+python3 -m venv .venv
+source .venv/bin/activate
+pip install fastapi uvicorn[standard]</pre>
+  </div>
+
+  <!-- 4.1 project layout -->
+  <div class="part">
+    <h3><span class="num">1</span> Project layout</h3>
+<pre>sysd/
+├── frontend/
+│   ├── index.html
+│   ├── style.css
+│   └── app.js
+└── backend/
+    └── main.py        <span class="com"># FastAPI app + routes + DB</span>
+    └── tinylink.db    <span class="com"># SQLite file, created on first run</span></pre>
+    <p>One Python process serves both the JSON API and the static frontend files. Browser sees a single origin → no CORS pain.</p>
+  </div>
+
+  <!-- 4.2 db -->
+  <div class="part">
+    <h3><span class="num">2</span> SQLite table</h3>
+    <h4>Theory</h4>
+    <p>One table. <code>id</code> is auto-increment integer — that's the number we Base62-encode. Storing <code>long_url</code> as TEXT keeps things simple.</p>
+    <h4>Code</h4>
+<pre><span class="kw">import</span> sqlite3
+
+conn = sqlite3.connect(<span class="str">"backend/tinylink.db"</span>, check_same_thread=<span class="kw">False</span>)
+conn.execute(<span class="str">"""
+  CREATE TABLE IF NOT EXISTS links (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    long_url  TEXT    NOT NULL,
+    created   DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+"""</span>)
+conn.commit()</pre>
+    <div class="callout warn"><code>check_same_thread=False</code> is fine for this demo (single process). For real production use SQLAlchemy + a connection pool.</div>
+  </div>
+
+  <!-- 4.3 base62 -->
+  <div class="part">
+    <h3><span class="num">3</span> Base62 in Python</h3>
+    <h4>Theory</h4>
+    <p>Same divide-mod loop as the JS version, just cleaner because Python has built-in integer division and <code>string.digits</code> / <code>string.ascii_letters</code> in stdlib.</p>
+    <h4>Code</h4>
+<pre><span class="kw">import</span> string
+
+ALPHA = string.digits + string.ascii_lowercase + string.ascii_uppercase   <span class="com"># 62 chars</span>
+
+<span class="kw">def</span> base62(n: <span class="kw">int</span>) -&gt; <span class="kw">str</span>:
+    <span class="kw">if</span> n == <span class="num">0</span>:
+        <span class="kw">return</span> <span class="str">"0"</span>
+    out = []
+    <span class="kw">while</span> n &gt; <span class="num">0</span>:
+        n, r = <span class="kw">divmod</span>(n, <span class="num">62</span>)
+        out.append(ALPHA[r])
+    <span class="kw">return</span> <span class="str">""</span>.join(<span class="kw">reversed</span>(out))</pre>
+    <p>Quick check: <code>base62(125)</code> → <code>"21"</code>, <code>base62(10_000_000_000)</code> → <code>"aUKYOz"</code>. Same outputs as the JS version.</p>
+  </div>
+
+  <!-- 4.4 routes -->
+  <div class="part">
+    <h3><span class="num">4</span> The two routes</h3>
+    <h4>Theory</h4>
+    <p>Two endpoints cover the whole product:</p>
+    <ul>
+      <li><b>POST <code>/api/shorten</code></b> — receive a long URL, insert row, return <code>{code, short, long}</code>.</li>
+      <li><b>GET <code>/{code}</code></b> — decode (just lookup by id), 302 redirect to original URL.</li>
+    </ul>
+    <p>FastAPI uses Pydantic models to declare request/response shape. Type errors become 422 responses automatically.</p>
+    <h4>Code</h4>
+<pre><span class="kw">from</span> fastapi <span class="kw">import</span> FastAPI, HTTPException, Request
+<span class="kw">from</span> fastapi.responses <span class="kw">import</span> RedirectResponse
+<span class="kw">from</span> fastapi.staticfiles <span class="kw">import</span> StaticFiles
+<span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel, HttpUrl
+
+app = FastAPI()
+
+<span class="kw">class</span> ShortenIn(BaseModel):
+    long: HttpUrl                         <span class="com"># validates URL for free</span>
+
+<span class="kw">class</span> ShortenOut(BaseModel):
+    code:  <span class="kw">str</span>
+    short: <span class="kw">str</span>
+    long:  <span class="kw">str</span>
+
+<span class="com"># --- POST /api/shorten -------------------------------------------------</span>
+<span class="kw">@app</span>.post(<span class="str">"/api/shorten"</span>, response_model=ShortenOut)
+<span class="kw">def</span> create_short(body: ShortenIn, request: Request):
+    cur = conn.execute(<span class="str">"INSERT INTO links (long_url) VALUES (?)"</span>,
+                       (<span class="kw">str</span>(body.long),))
+    conn.commit()
+    code = base62(cur.lastrowid)
+    base = <span class="kw">str</span>(request.base_url).rstrip(<span class="str">"/"</span>)
+    <span class="kw">return</span> ShortenOut(code=code, short=<span class="str">f"{base}/{code}"</span>, long=<span class="kw">str</span>(body.long))
+
+<span class="com"># --- GET /{code} -> 302 redirect --------------------------------------</span>
+<span class="kw">def</span> from_base62(s: <span class="kw">str</span>) -&gt; <span class="kw">int</span>:
+    n = <span class="num">0</span>
+    <span class="kw">for</span> ch <span class="kw">in</span> s:
+        n = n * <span class="num">62</span> + ALPHA.index(ch)
+    <span class="kw">return</span> n
+
+<span class="kw">@app</span>.get(<span class="str">"/{code}"</span>)
+<span class="kw">def</span> follow(code: <span class="kw">str</span>):
+    <span class="kw">try</span>:
+        row_id = from_base62(code)
+    <span class="kw">except</span> <span class="kw">ValueError</span>:
+        <span class="kw">raise</span> HTTPException(<span class="num">404</span>, <span class="str">"bad code"</span>)
+    row = conn.execute(<span class="str">"SELECT long_url FROM links WHERE id = ?"</span>,
+                       (row_id,)).fetchone()
+    <span class="kw">if not</span> row:
+        <span class="kw">raise</span> HTTPException(<span class="num">404</span>, <span class="str">"not found"</span>)
+    <span class="kw">return</span> RedirectResponse(row[<span class="num">0</span>], status_code=<span class="num">302</span>)
+
+<span class="com"># --- serve the frontend folder ----------------------------------------</span>
+app.mount(<span class="str">"/"</span>, StaticFiles(directory=<span class="str">"frontend"</span>, html=<span class="kw">True</span>), name=<span class="str">"site"</span>)</pre>
+    <div class="callout warn">Order matters: declare <code>/api/...</code> and <code>/{code}</code> <i>before</i> the catch-all <code>app.mount("/")</code>. FastAPI checks routes top-down.</div>
+  </div>
+
+  <!-- 4.5 request flow -->
+  <div class="part">
+    <h3><span class="num">5</span> Full request flow</h3>
+    <div class="visual">
+      <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10"  y="80" width="120" height="60" rx="8" fill="#1c2330" stroke="#58a6ff"/>
+        <text x="70"  y="108" text-anchor="middle" fill="#e6edf3" font-size="12">Browser</text>
+        <text x="70"  y="124" text-anchor="middle" fill="#8b949e" font-size="10">app.js fetch()</text>
+
+        <rect x="170" y="80" width="160" height="60" rx="8" fill="#1c2330" stroke="#7ee787"/>
+        <text x="250" y="108" text-anchor="middle" fill="#7ee787" font-size="12">FastAPI route</text>
+        <text x="250" y="124" text-anchor="middle" fill="#8b949e" font-size="10">POST /api/shorten</text>
+
+        <rect x="370" y="80" width="160" height="60" rx="8" fill="#1c2330" stroke="#d2a8ff"/>
+        <text x="450" y="108" text-anchor="middle" fill="#d2a8ff" font-size="12">SQLite INSERT</text>
+        <text x="450" y="124" text-anchor="middle" fill="#8b949e" font-size="10">returns lastrowid</text>
+
+        <rect x="570" y="80" width="170" height="60" rx="8" fill="#1c2330" stroke="#ffd866"/>
+        <text x="655" y="108" text-anchor="middle" fill="#ffd866" font-size="12">base62(id)</text>
+        <text x="655" y="124" text-anchor="middle" fill="#8b949e" font-size="10">→ JSON response</text>
+
+        <line x1="130" y1="110" x2="169" y2="110" stroke="#58a6ff" stroke-width="2" marker-end="url(#arr)"/>
+        <line x1="330" y1="110" x2="369" y2="110" stroke="#58a6ff" stroke-width="2" marker-end="url(#arr)"/>
+        <line x1="530" y1="110" x2="569" y2="110" stroke="#58a6ff" stroke-width="2" marker-end="url(#arr)"/>
+      </svg>
+      <div class="caption">JSON response goes straight back into <code>app.js</code>, which fills the result card.</div>
+    </div>
+  </div>
+
+  <!-- 4.6 docs -->
+  <div class="part">
+    <h3><span class="num">6</span> Free interactive docs</h3>
+    <p>FastAPI auto-generates an OpenAPI schema and serves a Swagger UI at <code>http://localhost:8000/docs</code>. You can fire requests at your own API from the browser without writing any test client. ReDoc is at <code>/redoc</code>.</p>
+    <div class="callout tip">This is the biggest "wow, Python" moment for a new backend dev — type your function once, get docs + validation + autocomplete in any HTTP client.</div>
+  </div>
+</section>
+
+<!-- ============ RUN IT ============ -->
+<section id="run">
+  <h2>5. Run it locally</h2>
+  <div class="part">
+    <p>One command runs the API <i>and</i> serves the frontend on the same port:</p>
+<pre><span class="com"># from project root, with the venv active</span>
+uvicorn backend.main:app --reload --port 8000
+<span class="com"># open http://localhost:8000      → the TinyLink UI</span>
+<span class="com"># open http://localhost:8000/docs → auto Swagger UI</span></pre>
+    <p>Try it end-to-end:</p>
+    <ol style="margin-left:22px;">
+      <li>Paste a long URL → click <b>Shorten</b>.</li>
+      <li>Frontend fires <code>POST /api/shorten</code> → Python inserts a row, returns <code>{code, short, long}</code>.</li>
+      <li>Click the short link → browser hits <code>GET /{code}</code> → FastAPI 302-redirects to the original URL.</li>
+      <li>History list in the UI is still cached in <code>localStorage</code> for instant render across reloads.</li>
+    </ol>
+    <div class="callout warn">Clipboard API needs an HTTP origin. <code>localhost</code> counts, but opening <code>index.html</code> via <code>file://</code> does not — always go through the uvicorn server.</div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>Four files, one app. HTML for skeleton, CSS for skin, JS for soul, Python for memory.</p>
+  <p>Next step: add user accounts (each link tied to a user) or click analytics (count visits per code).</p>
+</footer>
+
+</body>
+</html>
